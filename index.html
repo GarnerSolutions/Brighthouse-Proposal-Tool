@@ -16,7 +16,6 @@
             }
         };
     </script>
-    <!-- Remove the static Google Maps API script -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <!-- Inline CSS for modals and tabs -->
     <style>
@@ -558,10 +557,15 @@
                 const googleMapsScript = document.createElement("script");
                 googleMapsScript.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDyp3bPbVmleaQmGT0DlPpuZqpwMIUfz04&libraries=places&callback=initMap";
                 googleMapsScript.async = true;
+                googleMapsScript.onerror = function() {
+                    console.error("❌ Failed to load Google Maps API script. Check your API key, network connection, or Google Cloud Console for restrictions.");
+                };
                 document.head.appendChild(googleMapsScript);
+            };
+            scriptJs.onerror = function() {
+                console.error("❌ Failed to load script.js. Check if the file exists and is accessible.");
             };
         })();
     </script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'923374e17a0b674e',t:'MTc0MjQ1NTMyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
