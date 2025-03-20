@@ -499,7 +499,8 @@ async function generatePresentation(event) {
         }
 
         // Prepare API request
-        const apiUrl = "http://localhost:3000/api/calculateSolarSize";
+        // const apiUrl = "http://localhost:3000/api/calculateSolarSize";  // 🔧 Use for LOCAL TESTING
+        const apiUrl = "https://solar-calculator-zb73.onrender.com/api/process";  // 🌍 Use for LIVE SERVER 
         const requestBody = {
             address: fullAddress,
             currentConsumption,
