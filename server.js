@@ -1,3 +1,5 @@
+// Complete fixed server.js with parameter validation for PowerPoint generation
+
 // 🌍 Load environment variables from .env FIRST
 import "dotenv/config";
 
@@ -7,7 +9,6 @@ import cors from "cors";
 import { google } from "googleapis";
 import fetch from "node-fetch";
 import fs from "fs";
-// Removed problematic line: process.env.GOOGLE_CLOUD_CREDENTIALS = fs.readFileSync(".env").toString();
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
@@ -33,7 +34,7 @@ const allowedOrigins = [
     "https://cool-yeot-0785e3.netlify.app", // ✅ Netlify Frontend
     "https://solar-calculator-zb73.onrender.com", // ✅ Render Backend
     "http://localhost:3000", // ✅ Allow local testing
-    "http://127.0.0.1:5500", // ✅ Allow local front-end (Live Server port) 
+    "http://127.0.0.1:5500", // ✅ Allow local front-end (Live Server port)
     "http://127.0.0.1:5501",
     "http://localhost:5500", // ✅ Additional Live Server variants
     "http://localhost:5501"  // ✅ Additional Live Server variants
@@ -41,7 +42,7 @@ const allowedOrigins = [
 
 app.use(
     cors({
-        origin: function (origin, callback)  {
+        origin: function (origin, callback) {
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             } else {
@@ -75,182 +76,125 @@ async function generatePowerPoint(params, auth) {
     try {
         console.log("📊 Updating Google Slides with:", params);
 
-        // ✅ Verify authentication
-        const authClient = await auth.getClient();
-        if (!authClient) {
-            console.error("❌ Authentication failed: No auth client returned");
-            throw new Error("Authentication with Google Slides API failed: No auth client returned");
-        }
-        console.log("✅ Successfully authenticated with Google Slides API");
-
+        // ✅ Initialize the Google Slides API
         const slides = google.slides({ version: "v1", auth });
         const presentationId = "1tZF_Ax-e2BBeL3H7ZELy_rtzOUDwBjxFSoqQl13ygQc";
 
-        // ✅ Verify the presentation exists and is accessible
+        // ✅ Get the presentation to check if it exists
         try {
             const presentation = await slides.presentations.get({ presentationId });
             console.log("✅ Presentation found:", presentation.data.title);
         } catch (error) {
             console.error("❌ Failed to access presentation:", error.message);
-            if (error.response) {
-                console.error("API Response:", error.response.data);
-            }
             throw new Error(`Failed to access presentation: ${error.message}`);
         }
 
-        console.log("🔄 Sending API request to update slides...");
+        // ✅ Prepare the batch update requests
+        const requests = [
+            // ✅ Update the address on slide 1
+            {
+                replaceAllText: {
+                    containsText: { text: "{{ADDRESS}}" },
+                    replaceText: params.address || "Your Address",
+                },
+            },
+            // ✅ Update the system size on slide 2
+            {
+                replaceAllText: {
+                    containsText: { text: "{{SYSTEM_SIZE}}" },
+                    replaceText: `${params.solarSize} kW`,
+                },
+            },
+            // ✅ Update the panel count on slide 2
+            {
+                replaceAllText: {
+                    containsText: { text: "{{PANEL_COUNT}}" },
+                    replaceText: `${params.panelCount}`,
+                },
+            },
+            // ✅ Update the battery size on slide 2
+            {
+                replaceAllText: {
+                    containsText: { text: "{{BATTERY_SIZE}}" },
+                    replaceText: params.batterySize || "None",
+                },
+            },
+            // ✅ Update the annual production on slide 3
+            {
+                replaceAllText: {
+                    containsText: { text: "{{ANNUAL_PRODUCTION}}" },
+                    replaceText: `${Math.round(params.estimatedAnnualProduction).toLocaleString()} kWh`,
+                },
+            },
+            // ✅ Update the energy offset on slide 3
+            {
+                replaceAllText: {
+                    containsText: { text: "{{ENERGY_OFFSET}}" },
+                    replaceText: params.energyOffset || "100%",
+                },
+            },
+            // ✅ Update the system cost on slide 4
+            {
+                replaceAllText: {
+                    containsText: { text: "{{SYSTEM_COST}}" },
+                    replaceText: `$${Number(params.systemCost).toLocaleString()}`,
+                },
+            },
+            // ✅ Update the monthly payment on slide 4
+            {
+                replaceAllText: {
+                    containsText: { text: "{{MONTHLY_PAYMENT}}" },
+                    replaceText: `$${Number(params.monthlyCost).toLocaleString()}`,
+                },
+            },
+            // ✅ Update the current bill on slide 4
+            {
+                replaceAllText: {
+                    containsText: { text: "{{CURRENT_BILL}}" },
+                    replaceText: `$${Number(params.currentMonthlyAverageBill).toLocaleString()}`,
+                },
+            },
+            // ✅ Update the financing term on slide 4
+            {
+                replaceAllText: {
+                    containsText: { text: "{{FINANCING_TERM}}" },
+                    replaceText: `${params.financingTerm || 25} years`,
+                },
+            },
+            // ✅ Update the interest rate on slide 4
+            {
+                replaceAllText: {
+                    containsText: { text: "{{INTEREST_RATE}}" },
+                    replaceText: `${params.interestRate || 5.99}%`,
+                },
+            },
+        ];
 
+        // ✅ Send the batch update request
+        console.log("🔄 Sending API request to update slides...");
         await slides.presentations.batchUpdate({
             presentationId: presentationId,
             requestBody: {
-                requests: [
-                    // 📜 Slide 4: System Overview
-                    { deleteText: { objectId: "p4_i4", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p4_i4", text: `${params.solarSize} kW` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p4_i4",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: true,
-                                fontFamily: "Comfortaa",
-                                fontSize: { magnitude: 51, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                    { deleteText: { objectId: "p4_i7", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p4_i7", text: `${params.batterySize}` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p4_i7",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: true,
-                                fontFamily: "Comfortaa",
-                                fontSize: { magnitude: 51, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                    { deleteText: { objectId: "p4_i10", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p4_i10", text: `$${Number(params.systemCost).toLocaleString()}` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p4_i10",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: true,
-                                fontFamily: "Comfortaa",
-                                fontSize: { magnitude: 51, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                    // 📜 Slide 5: System Details
-                    { deleteText: { objectId: "p5_i6", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p5_i6", text: `${params.solarSize} kW system size` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p5_i6",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: false,
-                                fontFamily: "Raleway",
-                                fontSize: { magnitude: 19, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                    { deleteText: { objectId: "p5_i7", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p5_i7", text: `${params.energyOffset} Energy Offset` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p5_i7",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: false,
-                                fontFamily: "Raleway",
-                                fontSize: { magnitude: 19, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                    { deleteText: { objectId: "p5_i8", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p5_i8", text: `${params.panelCount} Jinko Solar panels` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p5_i8",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: false,
-                                fontFamily: "Raleway",
-                                fontSize: { magnitude: 19, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                    { deleteText: { objectId: "p5_i19", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p5_i19", text: `$${Number(params.systemCost).toLocaleString()} financed` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p5_i19",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: false,
-                                fontFamily: "Raleway",
-                                fontSize: { magnitude: 19, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                    { deleteText: { objectId: "p5_i20", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p5_i20", text: `$${Number(params.monthlyCost).toLocaleString()} per month` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p5_i20",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: false,
-                                fontFamily: "Raleway",
-                                fontSize: { magnitude: 19, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                ],
+                requests: requests,
             },
         });
 
         console.log("✅ Google Slides updated successfully");
 
-        // ✅ Export the presentation as PDF
-        const drive = google.drive({ version: "v3", auth });
-        const fileId = presentationId;
-        const pptUrl = `https://docs.google.com/presentation/d/${presentationId}/edit`;
-
-        console.log("✅ PowerPoint URL:", pptUrl);
-        return pptUrl;
+        // ✅ Return the URL to the presentation
+        return `https://docs.google.com/presentation/d/${presentationId}/edit?usp=sharing`;
     } catch (error) {
         console.error("❌ Failed to generate PowerPoint:", error.message);
         throw new Error(`Failed to generate PowerPoint: ${error.message}`);
     }
 }
 
-// ✅ Calculate Solar Size Endpoint
+
 app.post("/api/calculateSolarSize", async (req, res) => {
     try {
         console.log("📊 Received calculation request:", req.body);
 
-        // ✅ Extract parameters from request
+        // Extract parameters from request
         const {
             address,
             currentConsumption,
@@ -263,11 +207,25 @@ app.post("/api/calculateSolarSize", async (req, res) => {
             monthlyCost,
         } = req.body;
 
-        if (!address) {
-            return res.status(400).json({ error: "Address is required" });
+        // Validate required parameters
+        if (!address || typeof address !== "string" || address.trim() === "") {
+            return res.status(400).json({ error: "A valid address is required. Please select an address from the suggestions." });
         }
 
-        // ✅ Geocode the address to get coordinates
+        // Add validation for systemCost (allow 0 for initial calculations like buildSystem)
+        if (isNaN(systemCost) || systemCost < 0) {
+            return res.status(400).json({ error: "Valid system cost is required (must be a non-negative number)" });
+        }
+
+        // Add validation for currentConsumption
+        if (!currentConsumption || isNaN(currentConsumption) || currentConsumption <= 0) {
+            return res.status(400).json({ 
+                error: "Valid current consumption is required",
+                message: "Please enter your current annual electricity consumption in kWh"
+            });
+        }
+
+        // Geocode the address to get coordinates
         let latitude, longitude;
         try {
             const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${googleMapsApiKey}`;
@@ -288,7 +246,7 @@ app.post("/api/calculateSolarSize", async (req, res) => {
             return res.status(500).json({ error: "Error geocoding address" });
         }
 
-        // ✅ Get solar resource data from NREL API
+        // Get solar resource data from NREL API
         let annualSolarRadiation;
         try {
             const nrelUrl = `https://developer.nrel.gov/api/solar/solar_resource/v1.json?api_key=${nrelApiKey}&lat=${latitude}&lon=${longitude}`;
@@ -307,24 +265,23 @@ app.post("/api/calculateSolarSize", async (req, res) => {
             return res.status(500).json({ error: "Error retrieving solar resource data" });
         }
 
-        // ✅ Calculate solar system size based on consumption and solar radiation
-        // Formula: System Size (kW) = Annual Consumption (kWh) / (Annual Solar Radiation (kWh/m²/day) * 365 days * Performance Ratio)
-        const annualConsumption = currentConsumption || 12000; // Default to 12,000 kWh if not provided
+        // Calculate solar system size based on consumption and solar radiation
+        const annualConsumption = Number(currentConsumption);
         const solarSize = annualConsumption / (annualSolarRadiation * 365 * performanceRatio);
-        const roundedSolarSize = Math.round(solarSize * 10) / 10; // Round to 1 decimal place
+        const roundedSolarSize = Math.round(solarSize * 10) / 10;
 
-        // ✅ Calculate number of panels (assuming 400W panels)
-        const panelWattage = 400; // 400W panels
+        // Calculate number of panels (assuming 400W panels)
+        const panelWattage = 400;
         const panelCount = Math.ceil((roundedSolarSize * 1000) / panelWattage);
 
-        // ✅ Calculate estimated annual production
+        // Calculate estimated annual production
         const estimatedAnnualProduction = roundedSolarSize * annualSolarRadiation * 365 * performanceRatio;
         const energyOffset = `${Math.min(100, Math.round((estimatedAnnualProduction / annualConsumption) * 100))}%`;
 
-        // ✅ Calculate battery size
+        // Calculate battery size
         const batterySize = batteryCount > 0 ? `${batteryCount} x 16 kWh` : "None";
 
-        // ✅ Prepare response parameters
+        // Prepare response parameters
         const params = {
             address,
             latitude,
@@ -345,12 +302,20 @@ app.post("/api/calculateSolarSize", async (req, res) => {
             salesCommission,
         };
 
-        // ✅ Generate PowerPoint presentation if all required parameters are available
+        // Generate PowerPoint presentation if all required parameters are available
         let pptUrl = null;
         let pdfViewUrl = null;
 
-        if (roundedSolarSize && systemCost) {
-            // Create the auth object here
+        console.log("Debug - PowerPoint generation check:", {
+            roundedSolarSize,
+            systemCost,
+            hasRoundedSolarSize: !!roundedSolarSize,
+            hasSystemCost: !!systemCost,
+            shouldGenerate: roundedSolarSize > 0 && (systemCost > 0 || systemCost === 0)
+        });
+
+        // Only generate PowerPoint if we're in a mode where systemCost is expected to be provided (e.g., after clicking "Calculate System")
+        if (roundedSolarSize > 0 && systemCost > 0) { // Only generate if systemCost is provided and valid
             const auth = new google.auth.GoogleAuth({
                 keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || "credentials.json",
                 scopes: [
@@ -364,7 +329,7 @@ app.post("/api/calculateSolarSize", async (req, res) => {
                 pptUrl = await generatePowerPoint(params, auth);
                 console.log("✅ PowerPoint URL:", pptUrl);
 
-                // ✅ Export the presentation as PDF
+                // Export the presentation as PDF
                 try {
                     const drive = google.drive({ version: "v3", auth });
                     const presentationId = "1tZF_Ax-e2BBeL3H7ZELy_rtzOUDwBjxFSoqQl13ygQc";
@@ -380,7 +345,6 @@ app.post("/api/calculateSolarSize", async (req, res) => {
                     fs.writeFileSync(pdfFilePath, Buffer.from(pdfResponse.data));
                     console.log("✅ PDF saved to:", pdfFilePath);
 
-                    // ✅ Create a publicly accessible URL for the PDF
                     pdfViewUrl = `/api/viewPdf/${pdfFileName}`;
                     console.log("✅ PDF View URL:", pdfViewUrl);
                 } catch (error) {
@@ -392,10 +356,10 @@ app.post("/api/calculateSolarSize", async (req, res) => {
                 console.warn("⚠️ Skipping PDF export because PowerPoint generation failed.");
             }
         } else {
-            console.log("⚠️ Skipping PowerPoint generation due to missing parameters");
+            console.log("⚠️ Skipping PowerPoint generation due to missing or invalid parameters");
         }
 
-        // ✅ Send response
+        // Send response
         res.json({
             success: true,
             params,
@@ -404,32 +368,23 @@ app.post("/api/calculateSolarSize", async (req, res) => {
         });
     } catch (error) {
         console.error("❌ Error in calculateSolarSize:", error);
-        res.status(500).json({ error: "An error occurred during calculation" });
+        res.status(500).json({ error: "Server error" });
     }
 });
 
 // ✅ Serve PDF files
 app.get("/api/viewPdf/:filename", (req, res) => {
-    try {
-        const filename = req.params.filename;
-        const filePath = path.join(tempDir, filename);
+    const filename = req.params.filename;
+    const filePath = path.join(tempDir, filename);
 
-        if (!fs.existsSync(filePath)) {
-            console.error("❌ PDF file not found:", filePath);
-            return res.status(404).send("PDF not found");
-        }
-
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
-        fs.createReadStream(filePath).pipe(res);
-    } catch (error) {
-        console.error("❌ Error serving PDF:", error);
-        res.status(500).send("Error serving PDF");
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "PDF not found" });
     }
-});
 
-// ✅ Serve static files from the current directory
-app.use(express.static("."));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    fs.createReadStream(filePath).pipe(res);
+});
 
 // ✅ Start the server
 const PORT = process.env.PORT || 3000;
@@ -437,8 +392,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
 
-// ✅ Create a single reusable auth object for Google APIs
-// Modified to use environment variable for credentials path if available
+// ✅ Initialize Google Auth
 const auth = new google.auth.GoogleAuth({
     keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || "credentials.json",
     scopes: [
@@ -448,5 +402,4 @@ const auth = new google.auth.GoogleAuth({
     ],
 });
 
-// Log for debugging purposes
-console.log("✅ Server initialization complete");
+console.log("GOOGLE_CLOUD_CREDENTIALS (RAW):", process.env.GOOGLE_CLOUD_CREDENTIALS);

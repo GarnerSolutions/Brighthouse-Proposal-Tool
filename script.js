@@ -5,6 +5,17 @@ const apiUrl = "https://solar-calculator-zb73.onrender.com/api/process";  // �
 // const backendUrl = "http://localhost:3000";
 const backendUrl = "https://solar-calculator-zb73.onrender.com";
 
+// Global form submission prevention
+window.addEventListener('DOMContentLoaded', function() {
+    // Prevent all forms from submitting
+    document.addEventListener('submit', function(e) {
+        console.log('Form submission intercepted globally');
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    }, true); // Use capturing phase
+});
+
 // ✅ Google Places Autocomplete for Address Input
 function initializeAutocomplete() {
     const addressInput = document.getElementById("fullAddress");
@@ -336,7 +347,6 @@ async function generatePresentation(event) {
         const isManualMode = activeTab === "manual-entry";
 
         // Get input values based on active tab with proper null checks
-        // Use default values if elements don't exist or values are invalid
         const manualCurrentConsumptionElement = isManualMode ? document.getElementById("manualCurrentConsumption") : null;
         const currentConsumptionElement = !isManualMode ? document.getElementById("currentConsumption") : null;
         const currentConsumption = Number(
@@ -355,7 +365,7 @@ async function generatePresentation(event) {
         const panelDirectionElement = !isManualMode ? document.getElementById("panelDirection") : null;
         const panelDirection = 
             (isManualMode && manualPanelDirectionElement) ? manualPanelDirectionElement.value : 
-            (!isManualMode && panelDirectionElement) ? panelDirectionElement.value : "S"; // Default to South
+            (!isManualMode && panelDirectionElement) ? panelDirectionElement.value : "S";
 
         const manualCurrentMonthlyAverageBillElement = isManualMode ? document.getElementById("manualCurrentMonthlyAverageBill") : null;
         const currentMonthlyAverageBillElement = !isManualMode ? document.getElementById("currentMonthlyAverageBill") : null;
@@ -375,7 +385,7 @@ async function generatePresentation(event) {
         const shadingElement = !isManualMode ? document.getElementById("shading") : null;
         const shading = 
             (isManualMode && manualShadingElement) ? manualShadingElement.value.toLowerCase() : 
-            (!isManualMode && shadingElement) ? shadingElement.value.toLowerCase() : "none"; // Default to none
+            (!isManualMode && shadingElement) ? shadingElement.value.toLowerCase() : "none";
 
         const manualFullAddressElement = isManualMode ? document.getElementById("manualFullAddress") : null;
         const fullAddressElement = !isManualMode ? document.getElementById("fullAddress") : null;
@@ -397,9 +407,23 @@ async function generatePresentation(event) {
             (!isManualMode && monthlyCostElement) ? monthlyCostElement.value : 0
         );
 
-        // Use salesCommission from the modal, default to 0 if not set
         const salesCommissionElement = document.getElementById("salesCommissionModal");
         const salesCommission = salesCommissionElement ? Number(salesCommissionElement.value) || 0 : 0;
+
+        // Log all input values for debugging
+        console.log("Input Values for generatePresentation:", {
+            isManualMode,
+            currentConsumption,
+            desiredProduction,
+            panelDirection,
+            currentMonthlyAverageBill,
+            batteryCount,
+            shading,
+            fullAddress,
+            systemCost,
+            monthlyCost,
+            salesCommission
+        });
 
         // Get UI elements with null checks
         const resultsDiv = document.getElementById("results");
@@ -408,13 +432,11 @@ async function generatePresentation(event) {
         const dropdownToggle = document.querySelector(".dropdown-toggle");
         const resultsColumn = document.querySelector(".results-column");
 
-        // Check if all required UI elements exist
         if (!resultsDiv) {
             console.error("❌ Results div not found!");
             return;
         }
 
-        // If other UI elements are missing, we can still continue with just the results div
         if (!downloadLinkDiv || !dropdownContent || !dropdownToggle || !resultsColumn) {
             console.warn("⚠️ Some UI elements not found, but continuing with available elements");
         }
@@ -439,13 +461,13 @@ async function generatePresentation(event) {
             resultsDiv.innerHTML = `<p class="error">Please enter a valid current annual consumption (greater than 0).</p>`;
             return;
         }
-        if (currentConsumption > 1000000) { // Example upper bound: 1,000,000 kWh
+        if (currentConsumption > 1000000) {
             resultsDiv.innerHTML = `<p class="error">Current annual consumption is too large. Please enter a value less than 1,000,000 kWh.</p>`;
             return;
         }
 
         if (!fullAddress) {
-            resultsDiv.innerHTML = `<p class="error">Please enter a valid address.</p>`;
+            resultsDiv.innerHTML = `<p class="error">Please select a valid address from the suggestions.</p>`;
             return;
         }
 
@@ -453,7 +475,7 @@ async function generatePresentation(event) {
             resultsDiv.innerHTML = `<p class="error">Please enter a valid Current Monthly Average Bill (greater than 0).</p>`;
             return;
         }
-        if (currentMonthlyAverageBill > 10000) { // Example upper bound: $10,000
+        if (currentMonthlyAverageBill > 10000) {
             resultsDiv.innerHTML = `<p class="error">Current Monthly Average Bill is too large. Please enter a value less than $10,000.</p>`;
             return;
         }
@@ -462,7 +484,7 @@ async function generatePresentation(event) {
             resultsDiv.innerHTML = `<p class="error">Please enter a valid battery count (must be a non-negative number).</p>`;
             return;
         }
-        if (batteryCount > 100) { // Example upper bound: 100 batteries
+        if (batteryCount > 100) {
             resultsDiv.innerHTML = `<p class="error">Battery count is too large. Please enter a value less than 100.</p>`;
             return;
         }
@@ -471,24 +493,26 @@ async function generatePresentation(event) {
             resultsDiv.innerHTML = `<p class="error">Please enter a valid total system cost (must be greater than 0).</p>`;
             return;
         }
-        if (systemCost > 1000000) { // Example upper bound: $1,000,000
+        if (systemCost > 1000000) {
             resultsDiv.innerHTML = `<p class="error">Total system cost is too large. Please enter a value less than $1,000,000.</p>`;
             return;
         }
 
         // Prepare API request
-        const apiUrl = "http://localhost:3000/api/calculateSolarSize"; // Updated to point to Node.js server
+        const apiUrl = "http://localhost:3000/api/calculateSolarSize";
         const requestBody = {
             address: fullAddress,
             currentConsumption,
             currentMonthlyAverageBill,
             batteryCount,
-            financingTerm: 25, // Default value if not provided
-            interestRate: 5.99, // Default value if not provided
+            financingTerm: 25,
+            interestRate: 5.99,
             systemCost,
             salesCommission,
             monthlyCost,
         };
+
+        console.log("Sending API request with body:", requestBody);
 
         // Improved fetch with better error handling
         try {
@@ -969,8 +993,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (calculateButton) {
         calculateButton.addEventListener("click", (event) => {
             console.log("Calculate button clicked, preventing default...");
-            event.preventDefault(); // Prevent any default behavior
+            event.preventDefault();
+            event.stopPropagation();
             generatePresentation(event);
+            return false;
         });
     } else {
         console.error("❌ Calculate button not found!");
@@ -980,8 +1006,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (manualCalculateButton) {
         manualCalculateButton.addEventListener("click", (event) => {
             console.log("Manual Calculate button clicked, preventing default...");
-            event.preventDefault(); // Prevent any default behavior
+            event.preventDefault();
+            event.stopPropagation();
             generatePresentation(event);
+            return false;
         });
     } else {
         console.error("❌ Manual Calculate button not found!");
@@ -991,28 +1019,26 @@ document.addEventListener("DOMContentLoaded", function () {
     if (buildSystemButton) {
         buildSystemButton.addEventListener("click", (event) => {
             console.log("Build System button clicked, preventing default...");
-            event.preventDefault(); // Prevent any default behavior
+            event.preventDefault();
             buildSystem();
         });
     } else {
         console.error("❌ Build System button not found!");
     }
 
-    // Prevent form submission on Enter key or button click by adding submit event listeners
     const solarForm = document.getElementById("solarForm");
     const manualForm = document.getElementById("manualForm");
 
     if (solarForm) {
         solarForm.addEventListener("submit", (event) => {
             console.log("Solar Form submission prevented.");
-            event.preventDefault(); // Prevent form submission
+            event.preventDefault();
         });
 
-        // Existing Enter key handler for Solar Wizard tab
         solarForm.addEventListener("keydown", (event) => {
             if (event.key === "Enter" && !calculateButton.disabled) {
                 console.log("Enter key pressed in Solar Form, triggering calculateButton click...");
-                event.preventDefault(); // Prevent form submission
+                event.preventDefault();
                 calculateButton.click();
             }
         });
@@ -1023,14 +1049,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (manualForm) {
         manualForm.addEventListener("submit", (event) => {
             console.log("Manual Form submission prevented.");
-            event.preventDefault(); // Prevent form submission
+            event.preventDefault();
         });
 
-        // Existing Enter key handler for Manual Entry tab
         manualForm.addEventListener("keydown", (event) => {
             if (event.key === "Enter" && !manualCalculateButton.disabled) {
                 console.log("Enter key pressed in Manual Form, triggering manualCalculateButton click...");
-                event.preventDefault(); // Prevent form submission
+                event.preventDefault();
                 manualCalculateButton.click();
             }
         });
@@ -1048,10 +1073,16 @@ document.addEventListener("DOMContentLoaded", function () {
     inputsToWatch.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
-            field.addEventListener("input", updateCalculateButtonState);
-            field.addEventListener("change", updateCalculateButtonState);
-            field.addEventListener("input", updateBuildSystemButtonState);
-            field.addEventListener("change", updateBuildSystemButtonState);
+            field.addEventListener("input", () => {
+                console.log(`Input event on ${fieldId}: ${field.value}`);
+                updateCalculateButtonState();
+                updateBuildSystemButtonState();
+            });
+            field.addEventListener("change", () => {
+                console.log(`Change event on ${fieldId}: ${field.value}`);
+                updateCalculateButtonState();
+                updateBuildSystemButtonState();
+            });
         }
     });
 
@@ -1059,3 +1090,14 @@ document.addEventListener("DOMContentLoaded", function () {
     updateCalculateButtonState();
     updateBuildSystemButtonState();
 });
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const activeElement = document.activeElement;
+        if (activeElement.tagName === 'INPUT') {
+            console.log('Enter key in input prevented from submitting form');
+            e.preventDefault();
+            return false;
+        }
+    }
+}, true);
