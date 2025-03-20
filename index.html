@@ -6,16 +6,6 @@
     <title>Brighthouse Solar Calculator</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="/logo.ico">
-    <script>
-        window.initMap = function() {
-            console.log("✅ initMap called by Google Maps API");
-            if (typeof initializeAutocomplete === "function") {
-                initializeAutocomplete();
-            } else {
-                console.error("❌ initializeAutocomplete is not a function. Ensure script.js has loaded and defines this function.");
-            }
-        };
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <!-- Inline CSS for modals and tabs -->
     <style>
@@ -347,7 +337,7 @@
             <section id="resultsColumn" class="results-column">
                 <div id="results" class="results-section">
                     <h2 class="results-title">Discover Solar with Brighthouse</h2>
-                    <p>UNDER CONSTRUCTION! After completing left side, find your new presentation by downloading PDF. Click Edit > Download > PDF. Get your copy from <a href="https://docs.google.com/presentation/d/1tZF_Ax-e2BBeL3H7ZELy_rtzOUDwBjxFSoqQl13ygQc/edit#slide=id.p5">HERE</a> after you've completed the form and the website has refreshed.</p>
+                    <p>Fill the Form on the Left to generate your PDF</p>
                 </div>
                 <div id="downloadLink" class="download-section"></div>
             </section>
@@ -544,28 +534,10 @@
                 <button type="button" id="closeSystemCostModalButton" class="calculate-button" style="background: #e53e3e;">Close</button>
             </div>
         </div>
-    </div>
+    </div>a
 
     <script src="script.js"></script>
-    <!-- Dynamically load Google Maps API after script.js -->
-    <script>
-        (function() {
-            // Wait for script.js to load
-            const scriptJs = document.querySelector('script[src="script.js"]');
-            scriptJs.onload = function() {
-                console.log("✅ script.js loaded, now loading Google Maps API");
-                const googleMapsScript = document.createElement("script");
-                googleMapsScript.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDyp3bPbVmleaQmGT0DlPpuZqpwMIUfz04&libraries=places&callback=initMap";
-                googleMapsScript.async = true;
-                googleMapsScript.onerror = function() {
-                    console.error("❌ Failed to load Google Maps API script. Check your API key, network connection, or Google Cloud Console for restrictions.");
-                };
-                document.head.appendChild(googleMapsScript);
-            };
-            scriptJs.onerror = function() {
-                console.error("❌ Failed to load script.js. Check if the file exists and is accessible.");
-            };
-        })();
-    </script>
+    <!-- Load Google Maps API after script.js -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDyp3bPbVmleaQmGT0DlPpuZqpwMIUfz04&libraries=places&callback=initMap"></script>
 </body>
 </html>
