@@ -1,9 +1,9 @@
 // 🌍 Switch between local and live backend by commenting/uncommenting the correct line:
-const apiUrl = "http://localhost:3000/api/calculateSolarSize";  // 🔧 Use for LOCAL TESTING
-// const apiUrl = "https://solar-calculator-zb73.onrender.com/api/process";  // 🌍 Use for LIVE SERVER
+// const apiUrl = "http://localhost:3000/api/calculateSolarSize";  // 🔧 Use for LOCAL TESTING
+const apiUrl = "https://solar-calculator-zb73.onrender.com/api/process";  // 🌍 Use for LIVE SERVER
 
-const backendUrl = "http://localhost:3000";
-//const backendUrl = "https://solar-calculator-zb73.onrender.com";
+// const backendUrl = "http://localhost:3000";
+const backendUrl = "https://solar-calculator-zb73.onrender.com";
 
 // ✅ Google Places Autocomplete for Address Input
 function initializeAutocomplete() {
