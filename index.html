@@ -6,7 +6,18 @@
     <title>Brighthouse Solar Calculator</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="/logo.ico">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        window.initMap = function() {
+            console.log("✅ initMap called by Google Maps API");
+            if (typeof initializeAutocomplete === "function") {
+                initializeAutocomplete();
+            } else {
+                console.error("❌ initializeAutocomplete is not a function. Ensure script.js has loaded and defines this function.");
+            }
+        };
+    </script>
+    <!-- Remove the static Google Maps API script -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <!-- Inline CSS for modals and tabs -->
     <style>
         .modal {
@@ -338,14 +349,13 @@
                 <div id="results" class="results-section">
                     <h2 class="results-title">Discover Solar with Brighthouse</h2>
                     <p>UNDER CONSTRUCTION! After completing left side, find your new presentation by downloading PDF. Click Edit > Download > PDF. Get your copy from <a href="https://docs.google.com/presentation/d/1tZF_Ax-e2BBeL3H7ZELy_rtzOUDwBjxFSoqQl13ygQc/edit#slide=id.p5">HERE</a> after you've completed the form and the website has refreshed.</p>
-                    <!-- <p>Enter your energy details on the left to get a personalized solar solution. We'll calculate your system size, battery needs, and cost savings!</p> -->
                 </div>
                 <div id="downloadLink" class="download-section"></div>
             </section>
         </div>
     </main>
 
-    <!-- Modal for Consumption Help -->
+    <!-- Modals (unchanged) -->
     <div id="consumptionHelpModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Estimate Your Annual Consumption</h3>
@@ -371,7 +381,6 @@
         </div>
     </div>
 
-    <!-- Modal for Consumption Estimate Confirmation -->
     <div id="consumptionEstimateModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Consumption Estimate Complete</h3>
@@ -380,7 +389,6 @@
         </div>
     </div>
 
-    <!-- Modal for Utility Rate Estimation -->
     <div id="utilityRateHelpModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Use Our Estimated Rates</h3>
@@ -406,7 +414,6 @@
         </div>
     </div>
 
-    <!-- Modal for Utility Rate Estimate Confirmation -->
     <div id="utilityRateEstimateModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Utility Rate has been Estimated</h3>
@@ -415,7 +422,6 @@
         </div>
     </div>
 
-    <!-- Modal for Monthly Bill Estimation -->
     <div id="monthlyBillHelpModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Estimate Your Monthly Bill</h3>
@@ -438,7 +444,6 @@
         </div>
     </div>
 
-    <!-- Modal for Monthly Bill Estimate Confirmation -->
     <div id="monthlyBillEstimateModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>We have Estimated Your Monthly Bill</h3>
@@ -447,7 +452,6 @@
         </div>
     </div>
 
-    <!-- Modal for Current Monthly Utility Bill Estimation -->
     <div id="currentMonthlyBillHelpModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Estimate Your Current Monthly Bill</h3>
@@ -470,7 +474,6 @@
         </div>
     </div>
 
-    <!-- Modal for Battery Sizing Help -->
     <div id="batteryHelpModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Battery Sizing Help</h3>
@@ -484,7 +487,6 @@
         </div>
     </div>
 
-    <!-- Modal for Custom Battery Count -->
     <div id="batteryCountModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Battery Count</h3>
@@ -510,7 +512,6 @@
         </div>
     </div>
 
-    <!-- Modal for System Cost Calculator -->
     <div id="systemCostHelpModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>System Cost Calculator</h3>
@@ -546,8 +547,21 @@
         </div>
     </div>
 
-    
     <script src="script.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDyp3bPbVmleaQmGT0DlPpuZqpwMIUfz04&libraries=places&loading=async&callback=initMap"></script>
+    <!-- Dynamically load Google Maps API after script.js -->
+    <script>
+        (function() {
+            // Wait for script.js to load
+            const scriptJs = document.querySelector('script[src="script.js"]');
+            scriptJs.onload = function() {
+                console.log("✅ script.js loaded, now loading Google Maps API");
+                const googleMapsScript = document.createElement("script");
+                googleMapsScript.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDyp3bPbVmleaQmGT0DlPpuZqpwMIUfz04&libraries=places&callback=initMap";
+                googleMapsScript.async = true;
+                document.head.appendChild(googleMapsScript);
+            };
+        })();
+    </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'923374e17a0b674e',t:'MTc0MjQ1NTMyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

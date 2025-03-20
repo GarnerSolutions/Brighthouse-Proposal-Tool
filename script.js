@@ -1,9 +1,12 @@
-// 🌍 Switch between local and live backend by commenting/uncommenting the correct line:
-// const apiUrl = "http://localhost:3000/api/calculateSolarSize";  // 🔧 Use for LOCAL TESTING
-const apiUrl = "https://solar-calculator-zb73.onrender.com/api/process";  // 🌍 Use for LIVE SERVER
+const API_BASE_PATH = "/api/calculateSolarSize";
+let googleMapsLoaded = false;
 
-// const backendUrl = "http://localhost:3000";
-const backendUrl = "https://solar-calculator-zb73.onrender.com";
+// Callback function for Google Maps API
+function initMap() {
+    console.log("✅ Google Maps API loaded successfully");
+    googleMapsLoaded = true;
+    initializeAutocomplete();
+}
 
 // Global form submission prevention
 window.addEventListener('DOMContentLoaded', function() {
@@ -16,53 +19,106 @@ window.addEventListener('DOMContentLoaded', function() {
     }, true); // Use capturing phase
 });
 
-// ✅ Google Places Autocomplete for Address Input
+// Initialize Places Autocomplete for both Wizard and Manual Entry modes
 function initializeAutocomplete() {
-    const addressInput = document.getElementById("fullAddress");
-    const manualAddressInput = document.getElementById("manualFullAddress");
-    if (!addressInput || !manualAddressInput) {
-        console.error("❌ Address input field(s) not found!");
+    // Check if Google Maps API is loaded
+    if (!googleMapsLoaded || typeof google === "undefined" || !google.maps || !google.maps.places) {
+        console.error("❌ Google Maps API not loaded yet. Retrying in 1 second...");
+        setTimeout(initializeAutocomplete, 1000); // Retry after 1 second
         return;
     }
 
-    const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-        types: ["geocode"],
-        componentRestrictions: { country: "us" }
-    });
-    const manualAutocomplete = new google.maps.places.Autocomplete(manualAddressInput, {
-        types: ["geocode"],
-        componentRestrictions: { country: "us" }
-    });
+    console.log("📍 Initializing Places Autocomplete...");
 
-    autocomplete.addListener("place_changed", function () {
-        const place = autocomplete.getPlace();
-        if (!place.geometry) {
-            console.error("❌ No details available for input:", place);
-            return;
-        }
-        console.log("📍 Selected Address (Wizard):", place.formatted_address);
-        const changeEvent = new Event("change");
-        addressInput.dispatchEvent(changeEvent);
-        updateBuildSystemButtonState();
-    });
+    // Initialize Places Autocomplete for Wizard Mode
+    const addressInput = document.getElementById("fullAddress");
+    if (addressInput) {
+        try {
+            const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+                types: ["geocode"],
+                componentRestrictions: { country: "us" }
+            });
 
-    manualAutocomplete.addListener("place_changed", function () {
-        const place = manualAutocomplete.getPlace();
-        if (!place.geometry) {
-            console.error("❌ No details available for input:", place);
-            return;
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    console.error("❌ No geometry available for selected place (Wizard):", place);
+                    addressInput.value = ""; // Clear the input if the place is invalid
+                    const changeEvent = new Event("change");
+                    addressInput.dispatchEvent(changeEvent);
+                    if (typeof updateBuildSystemButtonState === "function") {
+                        updateBuildSystemButtonState();
+                    } else {
+                        console.warn("⚠️ updateBuildSystemButtonState is not defined");
+                    }
+                    return;
+                }
+
+                console.log("📍 Selected Address (Wizard):", place.formatted_address);
+                addressInput.value = place.formatted_address; // Ensure the input reflects the selected address
+                const changeEvent = new Event("change");
+                addressInput.dispatchEvent(changeEvent);
+
+                if (typeof updateBuildSystemButtonState === "function") {
+                    updateBuildSystemButtonState();
+                } else {
+                    console.warn("⚠️ updateBuildSystemButtonState is not defined");
+                }
+            });
+        } catch (error) {
+            console.error("❌ Failed to initialize Autocomplete for Wizard Mode:", error);
         }
-        console.log("📍 Selected Address (Manual):", place.formatted_address);
-        const changeEvent = new Event("change");
-        manualAddressInput.dispatchEvent(changeEvent);
-        updateCalculateButtonState();
-    });
+    } else {
+        console.warn("⚠️ fullAddress input not found for Wizard Mode");
+    }
+
+    // Initialize Places Autocomplete for Manual Entry Mode
+    const manualAddressInput = document.getElementById("manualFullAddress");
+    if (manualAddressInput) {
+        try {
+            const manualAutocomplete = new google.maps.places.Autocomplete(manualAddressInput, {
+                types: ["geocode"],
+                componentRestrictions: { country: "us" }
+            });
+
+            manualAutocomplete.addListener("place_changed", () => {
+                const place = manualAutocomplete.getPlace();
+                if (!place.geometry) {
+                    console.error("❌ No geometry available for selected place (Manual):", place);
+                    manualAddressInput.value = ""; // Clear the input if the place is invalid
+                    const changeEvent = new Event("change");
+                    manualAddressInput.dispatchEvent(changeEvent);
+                    if (typeof updateCalculateButtonState === "function") {
+                        updateCalculateButtonState();
+                    } else {
+                        console.warn("⚠️ updateCalculateButtonState is not defined");
+                    }
+                    return;
+                }
+
+                console.log("📍 Selected Address (Manual):", place.formatted_address);
+                manualAddressInput.value = place.formatted_address; // Ensure the input reflects the selected address
+                const changeEvent = new Event("change");
+                manualAddressInput.dispatchEvent(changeEvent);
+
+                if (typeof updateCalculateButtonState === "function") {
+                    updateCalculateButtonState();
+                } else {
+                    console.warn("⚠️ updateCalculateButtonState is not defined");
+                }
+            });
+        } catch (error) {
+            console.error("❌ Failed to initialize Autocomplete for Manual Entry Mode:", error);
+        }
+    } else {
+        console.warn("⚠️ manualFullAddress input not found for Manual Entry Mode");
+    }
+
+    // Log if neither input was found
+    if (!addressInput && !manualAddressInput) {
+        console.error("❌ Neither fullAddress nor manualFullAddress input fields were found!");
+    }
 }
-
-// ✅ Callback function for Google Maps API
-window.initMap = function() {
-    initializeAutocomplete();
-};
 
 // ✅ Toggle Dropdown Functionality
 function setupDropdown() {
@@ -298,7 +354,7 @@ async function buildSystem() {
 
     try {
         systemSizeDisplay.innerHTML = "<p>Calculating...</p>";
-        const response = await fetch(apiUrl, {
+        const response = await fetch(API_BASE_PATH, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(requestBody),
@@ -317,8 +373,13 @@ async function buildSystem() {
         if (systemSizeInput) {
             systemSizeInput.value = solarSize;
         }
+        const batterySizeInput = document.getElementById("batterySizeInput");
+        if (batterySizeInput) {
+            batterySizeInput.value = (solarSize * 2).toFixed(2); // 2 kWh per kW
+        }
         // Ensure Add Batteries button is enabled after successful build
         addBatteriesButton.disabled = false;
+        addBatteriesButton.style.backgroundColor = "#3b82f6";
         console.log("Add Batteries Button State: Enabled after build");
     } catch (error) {
         systemSizeDisplay.innerHTML = `<p class="error">Error: ${error.message}</p>`;
@@ -499,8 +560,7 @@ async function generatePresentation(event) {
         }
 
         // Prepare API request
-        // const apiUrl = "http://localhost:3000/api/calculateSolarSize";  // 🔧 Use for LOCAL TESTING
-        const apiUrl = "https://solar-calculator-zb73.onrender.com/api/process";  // 🌍 Use for LIVE SERVER 
+        const apiUrl = API_BASE_PATH; // Use relative URL
         const requestBody = {
             address: fullAddress,
             currentConsumption,
@@ -520,22 +580,29 @@ async function generatePresentation(event) {
             const response = await fetch(apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestBody) ,
+                body: JSON.stringify(requestBody),
             });
-            
+        
+            console.log("📥 Response status:", response.status);
+            console.log("📥 Response headers:", [...response.headers.entries()]);
+        
+            // Get the raw response body
+            const rawResponse = await response.text();
+            console.log("📥 Raw response body:", rawResponse);
+        
             // Handle non-JSON responses
             let responseData;
             try {
-                responseData = await response.json();
+                responseData = rawResponse ? JSON.parse(rawResponse) : null;
             } catch (jsonError) {
                 console.error("❌ Failed to parse JSON response:", jsonError);
-                resultsDiv.innerHTML = `<p class="error">Invalid server response. Please check that the server is running on port 3000.</p>`;
+                resultsDiv.innerHTML = `<p class="error">Invalid server response: ${jsonError.message}. Raw response: ${rawResponse || "empty"}. Please check that the server is running on port 3000.</p>`;
                 return;
             }
-            
+        
             if (!response.ok) {
-                console.error("❌ Server error:", response.status, response.statusText);
-                resultsDiv.innerHTML = `<p class="error">Server error: ${response.status} ${response.statusText}. Please check that the server is running on port 3000.</p>`;
+                console.error("❌ Server error:", response.status, response.statusText, responseData);
+                resultsDiv.innerHTML = `<p class="error">Server error: ${response.status} ${response.statusText}. ${responseData?.error || "No error message provided."}</p>`;
                 return;
             }
             
@@ -646,15 +713,11 @@ async function generatePresentation(event) {
             return;
         }
     } catch (error) {
-        console.error("❌ Error in generatePresentation:", error);
-        const resultsDiv = document.getElementById("results");
-        if (resultsDiv) {
-            resultsDiv.innerHTML = `<p class="error">An unexpected error occurred. Please try again later or contact support.</p>`;
-        }
+        console.error("❌ Network error:", error);
+        resultsDiv.innerHTML = `<p class="error">Network error: ${error.message}. Please check that the server is running on port 3000.</p>`;
+        return;
     }
-    console.log("generatePresentation completed successfully.");
 }
-
 
 // ✅ Handle Battery Sizing Help Modal
 function setupBatteryHelp() {
@@ -876,76 +939,60 @@ function setupSystemCostHelp() {
     });
 }
 
-// ✅ Function to check if all required fields have values and enable/disable Calculate System button
+// Function to update the state of the Calculate button in Wizard Mode
 function updateCalculateButtonState() {
+    const fullAddress = document.getElementById("fullAddress").value;
+    const currentConsumption = document.getElementById("currentConsumption").value;
+    const desiredProduction = document.getElementById("desiredProduction").value;
+    const systemCost = document.getElementById("systemCost").value;
+    const currentMonthlyAverageBill = document.getElementById("currentMonthlyAverageBill").value;
+    const monthlyCost = document.getElementById("monthlyCost").value;
     const calculateButton = document.getElementById("calculateButton");
-    const manualCalculateButton = document.getElementById("manualCalculateButton");
-    const currentConsumption = document.getElementById("currentConsumption")?.value.trim() || document.getElementById("manualCurrentConsumption")?.value.trim();
-    const desiredProduction = document.getElementById("desiredProduction")?.value.trim() || document.getElementById("manualDesiredProduction")?.value.trim();
-    const fullAddress = document.getElementById("fullAddress")?.value.trim() || document.getElementById("manualFullAddress")?.value.trim();
-    const currentMonthlyAverageBill = document.getElementById("currentMonthlyAverageBill")?.value.trim() || document.getElementById("manualCurrentMonthlyAverageBill")?.value.trim();
-    const systemCost = document.getElementById("systemCost")?.value.trim() || document.getElementById("manualSystemCost")?.value.trim();
-    const monthlyCost = document.getElementById("monthlyCost")?.value.trim() || document.getElementById("manualMonthlyCost")?.value.trim();
 
-    const allFieldsFilled = 
-        currentConsumption && 
-        desiredProduction && 
-        fullAddress && 
-        currentMonthlyAverageBill && 
-        systemCost && 
-        Number(systemCost) > 0 && 
-        monthlyCost;
+    const isFormValid = fullAddress && currentConsumption && desiredProduction && systemCost && currentMonthlyAverageBill && monthlyCost;
+    calculateButton.disabled = !isFormValid;
 
-    if (calculateButton) {
-        calculateButton.disabled = !allFieldsFilled;
-        console.log("Calculate Button State (Wizard):", !allFieldsFilled ? "Disabled" : "Enabled", {
-            currentConsumption,
-            desiredProduction,
-            fullAddress,
-            currentMonthlyAverageBill,
-            systemCost,
-            monthlyCost
-        });
-    }
-    if (manualCalculateButton) {
-        manualCalculateButton.disabled = !allFieldsFilled;
-        console.log("Calculate Button State (Manual):", !allFieldsFilled ? "Disabled" : "Enabled", {
-            currentConsumption,
-            desiredProduction,
-            fullAddress,
-            currentMonthlyAverageBill,
-            systemCost,
-            monthlyCost
-        });
+    if (isFormValid) {
+        calculateButton.style.backgroundColor = "#3b82f6";
+    } else {
+        calculateButton.style.backgroundColor = "#a3bffa";
     }
 }
 
-// ✅ Function to check if all required fields have values and enable/disable Build System button
-function updateBuildSystemButtonState() {
-    const buildSystemButton = document.getElementById("buildSystemButton");
-    const currentConsumption = document.getElementById("currentConsumption")?.value.trim();
-    const desiredProduction = document.getElementById("desiredProduction")?.value.trim();
-    const fullAddress = document.getElementById("fullAddress")?.value.trim();
+// Function to update the state of the Calculate button in Manual Entry Mode
+function updateManualCalculateButtonState() {
+    const manualFullAddress = document.getElementById("manualFullAddress").value;
+    const manualCurrentConsumption = document.getElementById("manualCurrentConsumption").value;
+    const manualDesiredProduction = document.getElementById("manualDesiredProduction").value;
+    const manualSystemCost = document.getElementById("manualSystemCost").value;
+    const manualCurrentMonthlyAverageBill = document.getElementById("manualCurrentMonthlyAverageBill").value;
+    const manualMonthlyCost = document.getElementById("manualMonthlyCost").value;
+    const manualCalculateButton = document.getElementById("manualCalculateButton");
 
-    if (!buildSystemButton) {
-        console.error("❌ Build System button not found!");
-        return;
+    const isFormValid = manualFullAddress && manualCurrentConsumption && manualDesiredProduction && manualSystemCost && manualCurrentMonthlyAverageBill && manualMonthlyCost;
+    manualCalculateButton.disabled = !isFormValid;
+
+    if (isFormValid) {
+        manualCalculateButton.style.backgroundColor = "#3b82f6";
+    } else {
+        manualCalculateButton.style.backgroundColor = "#a3bffa";
     }
+}
 
-    const allFieldsFilled = 
-        currentConsumption && 
-        desiredProduction && 
-        fullAddress;
+// Function to update the state of the Build System button
+function updateBuildSystemButtonState() {
+    const fullAddress = document.getElementById("fullAddress").value;
+    const currentConsumption = document.getElementById("currentConsumption").value;
+    const desiredProduction = document.getElementById("desiredProduction").value;
+    const buildSystemButton = document.getElementById("buildSystemButton");
 
-    buildSystemButton.disabled = !allFieldsFilled;
-    // Only log if the state changes to reduce console noise
-    if (buildSystemButton.disabled !== window.lastBuildSystemButtonState) {
-        console.log("Build System Button State:", !allFieldsFilled ? "Disabled" : "Enabled", {
-            currentConsumption,
-            desiredProduction,
-            fullAddress
-        });
-        window.lastBuildSystemButtonState = buildSystemButton.disabled;
+    const isFormValid = fullAddress && currentConsumption && desiredProduction;
+    buildSystemButton.disabled = !isFormValid;
+
+    if (isFormValid) {
+        buildSystemButton.style.backgroundColor = "#3b82f6";
+    } else {
+        buildSystemButton.style.backgroundColor = "#a3bffa";
     }
 }
 
@@ -961,8 +1008,154 @@ function setupTabs() {
             button.classList.add("active");
             document.getElementById(`${button.dataset.tab}-tab`).classList.add("active");
             updateCalculateButtonState(); // Update button states based on active tab
+            updateBuildSystemButtonState();
         });
     });
+}
+
+// Function to toggle the dropdown (fallback if setupDropdown isn't used)
+function toggleDropdown() {
+    const dropdownContent = document.querySelector(".dropdown-content");
+    const dropdownToggle = document.querySelector(".dropdown-toggle");
+    const isExpanded = dropdownToggle.getAttribute("aria-expanded") === "true";
+
+    dropdownToggle.setAttribute("aria-expanded", !isExpanded);
+    dropdownContent.style.display = isExpanded ? "none" : "block";
+    dropdownToggle.querySelector(".dropdown-icon").style.transform = isExpanded ? "rotate(0deg)" : "rotate(180deg)";
+}
+
+// Function to show a modal
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = "flex";
+    }
+}
+
+// Function to close a modal
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = "none";
+    }
+}
+
+// Function to calculate annual consumption (fallback if setupConsumptionHelp isn't used)
+function calculateConsumption() {
+    const monthlyBill = parseFloat(document.getElementById("modalMonthlyBill").value) || 0;
+    const utilityRate = parseFloat(document.getElementById("averageUtilityRate").value) || 0;
+
+    if (monthlyBill && utilityRate) {
+        const annualConsumption = (monthlyBill * 12) / utilityRate;
+        document.getElementById("currentConsumption").value = Math.round(annualConsumption);
+        closeModal("consumptionHelpModal");
+        showModal("consumptionEstimateModal");
+    } else {
+        alert("Please fill in both fields to calculate consumption.");
+    }
+}
+
+// Function to estimate utility rate (fallback if setupUtilityRateHelp isn't used)
+function estimateUtilityRate() {
+    const utilityProvider = document.getElementById("utilityProvider").value;
+    const careEnrollment = document.getElementById("careEnrollment").value;
+
+    const rates = {
+        "PG&E": { No: 0.45, Yes: 0.35 },
+        "SDG&E": { No: 0.50, Yes: 0.40 },
+        "SCE": { No: 0.42, Yes: 0.32 }
+    };
+
+    const estimatedRate = rates[utilityProvider][careEnrollment];
+    document.getElementById("averageUtilityRate").value = estimatedRate;
+    closeModal("utilityRateHelpModal");
+    showModal("utilityRateEstimateModal");
+}
+
+// Function to estimate monthly bill (fallback if setupMonthlyBillHelp isn't used)
+function estimateMonthlyBill(modalPrefix) {
+    const summerBill = parseFloat(document.getElementById(`${modalPrefix}SummerBill`).value) || 0;
+    const winterBill = parseFloat(document.getElementById(`${modalPrefix}WinterBill`).value) || 0;
+    const fallSpringBill = parseFloat(document.getElementById(`${modalPrefix}FallSpringBill`).value) || 0;
+
+    if (summerBill && winterBill && fallSpringBill) {
+        const averageBill = (summerBill * 3 + winterBill * 3 + fallSpringBill * 6) / 12;
+        if (modalPrefix === "current") {
+            document.getElementById("currentMonthlyAverageBill").value = averageBill.toFixed(2);
+        } else {
+            document.getElementById("modalMonthlyBill").value = averageBill.toFixed(2);
+        }
+        closeModal(`${modalPrefix}MonthlyBillHelpModal`);
+        showModal(`${modalPrefix}MonthlyBillEstimateModal`);
+    } else {
+        alert("Please fill in all fields to estimate the monthly bill.");
+    }
+}
+
+// Function to calculate system cost (fallback if setupSystemCostHelp isn't used)
+function calculateSystemCost() {
+    const salesRedline = parseFloat(document.getElementById("salesRedline").value) || 0;
+    const systemSize = parseFloat(document.getElementById("systemSizeInput").value) || 0;
+    const batterySize = parseFloat(document.getElementById("batterySizeInput").value) || 0;
+    const adderCosts = parseFloat(document.getElementById("adderCosts").value) || 0;
+    const salesCommission = parseFloat(document.getElementById("salesCommissionModal").value) || 0;
+
+    if (salesRedline && systemSize) {
+        const baseCost = systemSize * salesRedline;
+        const batteryCost = batterySize * 1000; // Assuming $1000 per kWh for battery
+        const totalCost = baseCost + batteryCost + adderCosts + salesCommission;
+        document.getElementById("systemCost").value = totalCost.toFixed(2);
+        closeModal("systemCostHelpModal");
+    } else {
+        alert("Please fill in the required fields to calculate system cost.");
+    }
+}
+
+// Function to recommend battery count (fallback if setupBatteryHelp isn't used)
+function recommendBatteryCount() {
+    const systemSize = parseFloat(document.getElementById("systemSizeDisplay").textContent.replace("System Size: ", "").replace(" kW", "")) || 0;
+    const recommendedStorage = systemSize * 2; // 2 kWh of battery storage per 1 kW of system size
+    const batteryCount = Math.ceil(recommendedStorage / 13.5); // Assuming each battery is 13.5 kWh
+
+    document.getElementById("recommendedBatteryCount").textContent = batteryCount;
+    document.getElementById("recommendedBatteryStorage").textContent = recommendedStorage.toFixed(2);
+    showModal("batteryHelpModal");
+}
+
+// Function to apply recommended battery count
+function applyRecommendation() {
+    const recommendedCount = parseInt(document.getElementById("recommendedBatteryCount").textContent) || 0;
+    document.getElementById("batteryCount").value = recommendedCount;
+    closeModal("batteryHelpModal");
+    updateTotalBatterySize();
+}
+
+// Function to overwrite battery recommendation
+function overwriteRecommendation() {
+    closeModal("batteryHelpModal");
+    showModal("batteryCountModal");
+}
+
+// Function to update total battery storage display
+function updateTotalBatterySize() {
+    const batteryCount = parseInt(document.getElementById("batteryCount").value) || 0;
+    const totalStorage = batteryCount * 13.5; // Assuming each battery is 13.5 kWh
+    document.getElementById("totalBatterySizeDisplay").textContent = `Total Battery Storage: ${totalStorage.toFixed(2)} kWh`;
+}
+
+// Function to apply battery count from modal
+function applyBatteries() {
+    const batteryQuantity = parseInt(document.getElementById("batteryQuantity").value) || 0;
+    document.getElementById("batteryCount").value = batteryQuantity;
+    updateTotalBatterySize();
+    closeModal("batteryCountModal");
+}
+
+// Function to update battery storage display in modal
+function updateBatteryStorageDisplay() {
+    const batteryQuantity = parseInt(document.getElementById("batteryQuantity").value) || 0;
+    const totalStorage = batteryQuantity * 13.5; // Assuming each battery is 13.5 kWh
+    document.getElementById("totalStorage").textContent = totalStorage.toFixed(2);
 }
 
 // ✅ Initialize Autocomplete and Add Event Listeners on Page Load
@@ -981,6 +1174,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    // Setup functions for modals and tabs
     setupDropdown();
     setupConsumptionHelp();
     setupUtilityRateHelp();
@@ -990,6 +1184,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setupSystemCostHelp();
     setupTabs();
 
+    // Add event listeners for buttons
     const calculateButton = document.getElementById("calculateButton");
     if (calculateButton) {
         calculateButton.addEventListener("click", (event) => {
@@ -1027,6 +1222,7 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("❌ Build System button not found!");
     }
 
+    // Form submission prevention and Enter key handling
     const solarForm = document.getElementById("solarForm");
     const manualForm = document.getElementById("manualForm");
 
@@ -1077,21 +1273,31 @@ document.addEventListener("DOMContentLoaded", function () {
             field.addEventListener("input", () => {
                 console.log(`Input event on ${fieldId}: ${field.value}`);
                 updateCalculateButtonState();
+                updateManualCalculateButtonState();
                 updateBuildSystemButtonState();
             });
             field.addEventListener("change", () => {
                 console.log(`Change event on ${fieldId}: ${field.value}`);
                 updateCalculateButtonState();
+                updateManualCalculateButtonState();
                 updateBuildSystemButtonState();
             });
         }
     });
 
+    // Battery count listener
+    const batteryQuantity = document.getElementById("batteryQuantity");
+    if (batteryQuantity) {
+        batteryQuantity.addEventListener("change", updateBatteryStorageDisplay);
+    }
+
     // Initial button state update
     updateCalculateButtonState();
+    updateManualCalculateButtonState();
     updateBuildSystemButtonState();
 });
 
+// Prevent Enter key from submitting forms
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         const activeElement = document.activeElement;
