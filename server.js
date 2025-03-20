@@ -7,6 +7,7 @@ import cors from "cors";
 import { google } from "googleapis";
 import fetch from "node-fetch";
 import fs from "fs";
+// Removed problematic line: process.env.GOOGLE_CLOUD_CREDENTIALS = fs.readFileSync(".env").toString();
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
@@ -32,13 +33,15 @@ const allowedOrigins = [
     "https://cool-yeot-0785e3.netlify.app", // ✅ Netlify Frontend
     "https://solar-calculator-zb73.onrender.com", // ✅ Render Backend
     "http://localhost:3000", // ✅ Allow local testing
-    "http://127.0.0.1:5500", // ✅ Allow local front-end (Live Server port)
+    "http://127.0.0.1:5500", // ✅ Allow local front-end (Live Server port) 
     "http://127.0.0.1:5501",
+    "http://localhost:5500", // ✅ Additional Live Server variants
+    "http://localhost:5501"  // ✅ Additional Live Server variants
 ];
 
 app.use(
     cors({
-        origin: function (origin, callback) {
+        origin: function (origin, callback)  {
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             } else {
@@ -209,7 +212,7 @@ async function generatePowerPoint(params, auth) {
                         },
                     },
                     { deleteText: { objectId: "p5_i20", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p5_i20", text: `$${params.monthlyWithSolar} monthly payments` } },
+                    { insertText: { objectId: "p5_i20", text: `$${Number(params.monthlyCost).toLocaleString()} per month` } },
                     {
                         updateTextStyle: {
                             objectId: "p5_i20",
@@ -223,351 +226,227 @@ async function generatePowerPoint(params, auth) {
                             fields: "bold,fontFamily,fontSize,foregroundColor",
                         },
                     },
-                    // 📜 Slide 6: Cost Comparison
-                    { deleteText: { objectId: "p6_i5", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p6_i5", text: `$${params.monthlyWithSolar}` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p6_i5",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: true,
-                                fontFamily: "Comfortaa",
-                                fontSize: { magnitude: 21.5, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
-                    { deleteText: { objectId: "p6_i10", textRange: { type: "ALL" } } },
-                    { insertText: { objectId: "p6_i10", text: `$${params.currentMonthlyBill}` } },
-                    {
-                        updateTextStyle: {
-                            objectId: "p6_i10",
-                            textRange: { type: "ALL" },
-                            style: {
-                                bold: true,
-                                fontFamily: "Comfortaa",
-                                fontSize: { magnitude: 21.5, unit: "PT" },
-                                foregroundColor: { opaqueColor: { rgbColor: { red: 0.843, green: 0.831, blue: 0.8 } } },
-                            },
-                            fields: "bold,fontFamily,fontSize,foregroundColor",
-                        },
-                    },
                 ],
             },
         });
 
-        console.log("✅ Google Slides updated successfully!");
-        return `https://docs.google.com/presentation/d/${presentationId}/edit?usp=sharing`;
+        console.log("✅ Google Slides updated successfully");
+
+        // ✅ Export the presentation as PDF
+        const drive = google.drive({ version: "v3", auth });
+        const fileId = presentationId;
+        const pptUrl = `https://docs.google.com/presentation/d/${presentationId}/edit`;
+
+        console.log("✅ PowerPoint URL:", pptUrl);
+        return pptUrl;
     } catch (error) {
-        console.error("❌ Detailed Google Slides Error:", error);
-        if (error.response) {
-            console.error("API Response:", error.response.data);
-        }
-        throw new Error(`Failed to generate PowerPoint: ${error.message || "Unknown error in Google Slides API"}`);
+        console.error("❌ Failed to generate PowerPoint:", error.message);
+        throw new Error(`Failed to generate PowerPoint: ${error.message}`);
     }
 }
 
-app.post("/api/process", async (req, res) => {
+// ✅ Calculate Solar Size Endpoint
+app.post("/api/calculateSolarSize", async (req, res) => {
     try {
-        console.log("🔍 Received Request Body:", req.body);
+        console.log("📊 Received calculation request:", req.body);
 
-        const { desiredProduction, currentConsumption, panelDirection, batteryCount, fullAddress, currentMonthlyAverageBill, systemCost, monthlyCost, shading } = req.body;
+        // ✅ Extract parameters from request
+        const {
+            address,
+            currentConsumption,
+            currentMonthlyAverageBill,
+            batteryCount,
+            financingTerm,
+            interestRate,
+            systemCost,
+            salesCommission,
+            monthlyCost,
+        } = req.body;
 
-        // ✅ Basic Validations (Make cost-related fields optional)
-        if (!desiredProduction || isNaN(desiredProduction) || desiredProduction <= 0) {
-            return res.status(400).json({ error: "Invalid desired annual kWh production." });
-        }
-        if (!currentConsumption || isNaN(currentConsumption) || currentConsumption <= 0) {
-            return res.status(400).json({ error: "Invalid current annual kWh consumption." });
-        }
-        if (!fullAddress) {
-            return res.status(400).json({ error: "Full address is required." });
-        }
-        if (isNaN(batteryCount) || batteryCount < 0) {
-            return res.status(400).json({ error: "Battery count must be a non-negative number." });
-        }
-
-        // Optional validations for cost-related fields (only if provided and non-zero)
-        if (currentMonthlyAverageBill && (isNaN(currentMonthlyAverageBill) || currentMonthlyAverageBill <= 0)) {
-            return res.status(400).json({ error: "Invalid current monthly average bill." });
-        }
-        if (systemCost && (isNaN(systemCost) || systemCost < 0)) {
-            return res.status(400).json({ error: "System cost must be a non-negative number." });
-        }
-        if (monthlyCost && (isNaN(monthlyCost) || monthlyCost < 0)) {
-            return res.status(400).json({ error: "Monthly cost with solar must be a non-negative number." });
+        if (!address) {
+            return res.status(400).json({ error: "Address is required" });
         }
 
-        // Fallback for shading value
-        const validatedShading = shading && ["none", "light", "medium", "heavy"].includes(shading) ? shading : "none";
-        console.log("🔍 Validated Shading Value:", validatedShading);
+        // ✅ Geocode the address to get coordinates
+        let latitude, longitude;
+        try {
+            const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${googleMapsApiKey}`;
+            const geocodeResponse = await fetch(geocodeUrl);
+            const geocodeData = await geocodeResponse.json();
 
-        if (!googleMapsApiKey) {
-            return res.status(500).json({ error: "Google Maps API Key is missing." });
+            if (geocodeData.status !== "OK" || !geocodeData.results || geocodeData.results.length === 0) {
+                console.error("❌ Geocoding failed:", geocodeData);
+                return res.status(400).json({ error: "Could not geocode address" });
+            }
+
+            const location = geocodeData.results[0].geometry.location;
+            latitude = location.lat;
+            longitude = location.lng;
+            console.log("📍 Geocoded coordinates:", latitude, longitude);
+        } catch (error) {
+            console.error("❌ Geocoding error:", error);
+            return res.status(500).json({ error: "Error geocoding address" });
         }
 
-        // ✅ Convert Address to Lat/Lon
-        const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${googleMapsApiKey}`;
-        console.log("📡 Fetching Geocoding Data:", geoUrl);
+        // ✅ Get solar resource data from NREL API
+        let annualSolarRadiation;
+        try {
+            const nrelUrl = `https://developer.nrel.gov/api/solar/solar_resource/v1.json?api_key=${nrelApiKey}&lat=${latitude}&lon=${longitude}`;
+            const nrelResponse = await fetch(nrelUrl);
+            const nrelData = await nrelResponse.json();
 
-        const geoResponse = await fetch(geoUrl);
-        const geoData = await geoResponse.json();
+            if (!nrelData.outputs || !nrelData.outputs.avg_dni || !nrelData.outputs.avg_dni.annual) {
+                console.error("❌ NREL API error:", nrelData);
+                return res.status(500).json({ error: "Could not retrieve solar resource data" });
+            }
 
-        if (!geoData.results || geoData.results.length === 0 || geoData.status !== "OK") {
-            console.warn("⚠️ Invalid or Unrecognized Address.");
-            return res.status(400).json({ error: "Invalid address. Please enter a valid one." });
+            annualSolarRadiation = nrelData.outputs.avg_dni.annual;
+            console.log("☀️ Annual Solar Radiation:", annualSolarRadiation, "kWh/m²/day");
+        } catch (error) {
+            console.error("❌ NREL API error:", error);
+            return res.status(500).json({ error: "Error retrieving solar resource data" });
         }
 
-        const { lat, lng } = geoData.results[0].geometry.location;
-        console.log(`✅ Address Geocoded: Lat ${lat}, Lon ${lng}`);
+        // ✅ Calculate solar system size based on consumption and solar radiation
+        // Formula: System Size (kW) = Annual Consumption (kWh) / (Annual Solar Radiation (kWh/m²/day) * 365 days * Performance Ratio)
+        const annualConsumption = currentConsumption || 12000; // Default to 12,000 kWh if not provided
+        const solarSize = annualConsumption / (annualSolarRadiation * 365 * performanceRatio);
+        const roundedSolarSize = Math.round(solarSize * 10) / 10; // Round to 1 decimal place
 
-        // ✅ Get Solar Irradiance
-        let originalSolarIrradiance = await getSolarIrradiance(lat, lng);
-        if (!originalSolarIrradiance) {
-            return res.status(400).json({ error: "Could not retrieve solar data." });
-        }
-        console.log(`🌞 Original Solar Irradiance: ${originalSolarIrradiance.toFixed(2)} kWh/m²/day`);
+        // ✅ Calculate number of panels (assuming 400W panels)
+        const panelWattage = 400; // 400W panels
+        const panelCount = Math.ceil((roundedSolarSize * 1000) / panelWattage);
 
-        // ✅ Apply Shading Modifier to Solar Irradiance
-        const shadingFactors = {
-            none: 1.0, // 100% - 0% = 100%
-            light: 0.95, // 100% - 5% = 95%
-            medium: 0.875, // 100% - 12.5% = 87.5%
-            heavy: 0.80, // 100% - 20% = 80%
+        // ✅ Calculate estimated annual production
+        const estimatedAnnualProduction = roundedSolarSize * annualSolarRadiation * 365 * performanceRatio;
+        const energyOffset = `${Math.min(100, Math.round((estimatedAnnualProduction / annualConsumption) * 100))}%`;
+
+        // ✅ Calculate battery size
+        const batterySize = batteryCount > 0 ? `${batteryCount} x 16 kWh` : "None";
+
+        // ✅ Prepare response parameters
+        const params = {
+            address,
+            latitude,
+            longitude,
+            annualSolarRadiation,
+            solarSize: roundedSolarSize,
+            panelCount,
+            estimatedAnnualProduction,
+            energyOffset,
+            batterySize,
+            batteryCount,
+            systemCost,
+            financingTerm,
+            interestRate,
+            monthlyCost,
+            currentConsumption: annualConsumption,
+            currentMonthlyAverageBill,
+            salesCommission,
         };
-        const shadingFactor = shadingFactors[validatedShading];
-        const adjustedSolarIrradiance = originalSolarIrradiance * shadingFactor;
-        console.log(`🌞 Adjusted Solar Irradiance after ${validatedShading} shading (${(1 - shadingFactor) * 100}% reduction): ${adjustedSolarIrradiance.toFixed(2)} kWh/m²/day`);
 
-        // ✅ Calculate Solar System Size
-        const solarSize = calculateSolarSize(desiredProduction, adjustedSolarIrradiance, panelDirection);
-        console.log(`🔢 Calculated Solar System Size: ${solarSize.toFixed(2)} kW with adjusted irradiance`);
-
-        // ✅ Calculate System Parameters (only if cost fields are provided)
-        let params;
-        if (currentMonthlyAverageBill || systemCost || monthlyCost) {
-            params = calculateSystemParams(solarSize, adjustedSolarIrradiance, batteryCount, currentConsumption, desiredProduction, currentMonthlyAverageBill || 0, systemCost || 0, monthlyCost || 0);
-            console.log("✅ Final System Parameters:", params);
-        } else {
-            // Minimal response for "Build System" button
-            params = { solarSize: solarSize.toFixed(1) };
-            console.log("✅ Minimal Parameters (solarSize only):", params);
-        }
-
-        // ✅ Generate PowerPoint only if cost fields are provided (for full calculation)
+        // ✅ Generate PowerPoint presentation if all required parameters are available
         let pptUrl = null;
         let pdfViewUrl = null;
-        if (currentMonthlyAverageBill || systemCost || monthlyCost) {
+
+        if (roundedSolarSize && systemCost) {
             // Create the auth object here
             const auth = new google.auth.GoogleAuth({
-                keyFile: "credentials.json",
+                keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || "credentials.json",
                 scopes: [
                     "https://www.googleapis.com/auth/presentations",
                     "https://www.googleapis.com/auth/drive",
                     "https://www.googleapis.com/auth/drive.readonly",
                 ],
             });
-
-            // Step 1: Generate the PowerPoint presentation
+        
             try {
                 pptUrl = await generatePowerPoint(params, auth);
-                console.log("📄 PowerPoint URL:", pptUrl);
-            } catch (error) {
-                console.error("⚠️ PowerPoint generation failed:", error.message, error.stack);
-                pptUrl = null; // Ensure pptUrl is null if generation fails
-            }
+                console.log("✅ PowerPoint URL:", pptUrl);
 
-            // Step 2: Export as PDF only if PowerPoint generation succeeded
-            if (pptUrl) {
+                // ✅ Export the presentation as PDF
                 try {
                     const drive = google.drive({ version: "v3", auth });
                     const presentationId = "1tZF_Ax-e2BBeL3H7ZELy_rtzOUDwBjxFSoqQl13ygQc";
+                    const pdfFileName = `Brighthouse_Solar_Proposal_${uuidv4()}.pdf`;
+                    const pdfFilePath = path.join(tempDir, pdfFileName);
 
                     console.log("📄 Exporting presentation as PDF...");
-                    const pdfResponse = await drive.files.export(
-                        {
-                            fileId: presentationId,
-                            mimeType: "application/pdf",
-                        },
-                        { responseType: "arraybuffer" }
-                    );
-                    console.log("✅ PDF export successful, response length:", pdfResponse.data.length);
+                    const pdfResponse = await drive.files.export({
+                        fileId: presentationId,
+                        mimeType: "application/pdf",
+                    }, { responseType: "arraybuffer" });
 
-                    const pdfBuffer = Buffer.from(pdfResponse.data);
-                    const fileId = uuidv4();
-                    const pdfPath = path.join(tempDir, `${fileId}.pdf`);
-                    await fs.promises.writeFile(pdfPath, pdfBuffer);
-                    console.log("✅ PDF saved to:", pdfPath);
+                    fs.writeFileSync(pdfFilePath, Buffer.from(pdfResponse.data));
+                    console.log("✅ PDF saved to:", pdfFilePath);
 
-                    // Verify the file exists
-                    if (!fs.existsSync(pdfPath)) {
-                        console.error("❌ PDF file not found at:", pdfPath);
-                        throw new Error("Failed to save PDF file.");
-                    }
-
-                    // Construct the full PDF view URL
-                    pdfViewUrl = `http://${req.get("host")}/view/pdf?fileId=${fileId}`; // Use http for local testing
+                    // ✅ Create a publicly accessible URL for the PDF
+                    pdfViewUrl = `/api/viewPdf/${pdfFileName}`;
                     console.log("✅ PDF View URL:", pdfViewUrl);
                 } catch (error) {
-                    console.error("⚠️ PDF export failed, proceeding with pptUrl:", error.message, error.stack);
-                    pdfViewUrl = null; // Only set pdfViewUrl to null, preserve pptUrl
+                    console.error("⚠️ PDF export failed:", error.message);
+                    console.warn("⚠️ Skipping PDF export because PowerPoint generation failed.");
                 }
-            } else {
+            } catch (error) {
+                console.error("⚠️ PowerPoint generation failed:", error);
                 console.warn("⚠️ Skipping PDF export because PowerPoint generation failed.");
             }
+        } else {
+            console.log("⚠️ Skipping PowerPoint generation due to missing parameters");
         }
 
-        // Send response even if PowerPoint/PDF generation fails
-        console.log("📤 Sending response:", { pptUrl, pdfViewUrl, params });
-        res.json({ pptUrl, pdfViewUrl, params });
+        // ✅ Send response
+        res.json({
+            success: true,
+            params,
+            pptUrl,
+            pdfViewUrl,
+        });
     } catch (error) {
-        console.error("❌ Server Error:", error);
-        res.status(500).json({ error: `Failed to process the request: ${error.message}` });
+        console.error("❌ Error in calculateSolarSize:", error);
+        res.status(500).json({ error: "An error occurred during calculation" });
     }
 });
 
-// ✅ New Endpoint to Serve PDF Inline (Viewable in Browser)
-app.get("/view/pdf", (req, res) => {
-    const fileId = req.query.fileId;
-    if (!fileId) {
-        return res.status(400).send("Missing fileId");
-    }
-    const pdfPath = path.join(tempDir, `${fileId}.pdf`);
-    console.log("Attempting to serve PDF from:", pdfPath);
-
-    if (!fs.existsSync(pdfPath)) {
-        console.error("❌ PDF file not found at:", pdfPath);
-        return res.status(404).send("File not found");
-    }
-
-    // Serve the PDF inline for browser viewing
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=presentation.pdf");
-    const fileStream = fs.createReadStream(pdfPath);
-    fileStream.pipe(res);
-
-    // Log successful streaming
-    fileStream.on("data", (chunk) => console.log("Streaming PDF chunk:", chunk.length, "bytes"));
-    fileStream.on("end", () => {
-        console.log("✅ PDF streaming completed");
-        fs.unlink(pdfPath, (err) => {
-            if (err) console.error("Error deleting file:", err);
-            else console.log("✅ PDF file deleted after viewing:", pdfPath);
-        });
-    });
-    fileStream.on("error", (err) => {
-        console.error("❌ Error streaming PDF:", err);
-        res.status(500).send("Error streaming PDF");
-    });
-});
-
-// Existing /download/pdf endpoint (unchanged, kept for flexibility)
-app.get("/download/pdf", (req, res) => {
-    const fileId = req.query.fileId;
-    if (!fileId) {
-        return res.status(400).send("Missing fileId");
-    }
-    const pdfPath = path.join(tempDir, `${fileId}.pdf`);
-    if (!fs.existsSync(pdfPath)) {
-        return res.status(404).send("File not found");
-    }
-
-    res.download(pdfPath, "presentation.pdf", (err) => {
-        if (err) {
-            console.error("Error downloading file:", err);
-        }
-        fs.unlink(pdfPath, (err) => {
-            if (err) console.error("Error deleting file:", err);
-        });
-    });
-});
-
-// Existing helper functions (unchanged)
-async function getSolarIrradiance(lat, lng) {
+// ✅ Serve PDF files
+app.get("/api/viewPdf/:filename", (req, res) => {
     try {
-        const nrelUrl = `https://developer.nrel.gov/api/pvwatts/v6.json?api_key=${nrelApiKey}&lat=${lat}&lon=${lng}&system_capacity=1&module_type=1&losses=14&array_type=1&tilt=20&azimuth=180`;
-        console.log("Fetching solar data from:", nrelUrl);
-        const solarResponse = await fetch(nrelUrl);
-        const solarData = await solarResponse.json();
+        const filename = req.params.filename;
+        const filePath = path.join(tempDir, filename);
 
-        console.log("🌞 NREL API Response:", JSON.stringify(solarData, null, 2));
-
-        if (!solarData.outputs?.solrad_annual) {
-            console.warn("⚠️ No annual solar data found, using default irradiance of 6.02");
-            return 6.02;
+        if (!fs.existsSync(filePath)) {
+            console.error("❌ PDF file not found:", filePath);
+            return res.status(404).send("PDF not found");
         }
 
-        return solarData.outputs.solrad_annual;
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+        fs.createReadStream(filePath).pipe(res);
     } catch (error) {
-        console.error("❌ Failed to fetch solar data:", error);
-        return 6.02; // Default irradiance
+        console.error("❌ Error serving PDF:", error);
+        res.status(500).send("Error serving PDF");
     }
-}
+});
 
-function calculateSystemParams(solarSize, solarIrradiance, batteryCount, currentConsumption, desiredProduction, currentMonthlyAverageBill, systemCost, monthlyCost) {
-    // Ensure batteryCount is a non-negative integer
-    batteryCount = isNaN(parseInt(batteryCount)) ? 0 : parseInt(batteryCount);
-    batteryCount = Math.max(0, batteryCount);
+// ✅ Serve static files from the current directory
+app.use(express.static("."));
 
-    // Calculate batterySize directly from batteryCount (each battery is 16 kWh)
-    const batterySize = batteryCount * 16;
+// ✅ Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+});
 
-    const panelCount = Math.ceil(solarSize / 0.44);
-    // Override systemCost with user-provided value if provided, otherwise use calculated value
-    const calculatedSystemCost = Math.round(solarSize * 2000);
-    const finalSystemCost = systemCost > 0 ? systemCost : calculatedSystemCost;
-    const batteryCost = Math.round(batterySize * 1000);
-    const totalCost = finalSystemCost + batteryCost; // Correct total cost calculation
+// ✅ Create a single reusable auth object for Google APIs
+// Modified to use environment variable for credentials path if available
+const auth = new google.auth.GoogleAuth({
+    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || "credentials.json",
+    scopes: [
+        "https://www.googleapis.com/auth/presentations",
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/drive.readonly",
+    ],
+});
 
-    const estimatedAnnualProduction = Math.round(solarSize * solarIrradiance * 365 * 0.70);
-
-    let energyOffset = "N/A";
-    if (!isNaN(currentConsumption) && currentConsumption > 0) {
-        energyOffset = ((desiredProduction / currentConsumption) * 100).toFixed(1) + "%";
-    }
-
-    // Override monthlyWithSolar with user-provided value if provided, otherwise use a default calculation
-    const calculatedMonthlyWithSolar = Math.round(totalCost / 300);
-    const finalMonthlyWithSolar = monthlyCost > 0 ? monthlyCost : calculatedMonthlyWithSolar;
-
-    return {
-        solarSize: solarSize.toFixed(1),
-        batterySize: `${batterySize} kWh (${batteryCount}x 16 kWh)`,
-        panelCount,
-        systemCost: finalSystemCost.toFixed(0),
-        batteryCost: batteryCost.toFixed(0),
-        totalCost: totalCost.toFixed(0), // Add totalCost to the return object
-        currentMonthlyBill: currentMonthlyAverageBill,
-        monthlyWithSolar: finalMonthlyWithSolar.toFixed(0),
-        estimatedAnnualProduction,
-        energyOffset,
-    };
-}
-
-function calculateSolarSize(desiredProduction, solarIrradiance, panelDirection) {
-    const adjustmentFactor = {
-        S: 1.0,
-        SE: 0.90,
-        SW: 0.90,
-        E: 0.80,
-        W: 0.80,
-        NE: 0.70,
-        NW: 0.70,
-        N: 0.60,
-        MIX: 0.85,
-    }[panelDirection] || 1.0;
-
-    let solarSize = desiredProduction / (solarIrradiance * 365 * performanceRatio * adjustmentFactor);
-
-    console.log(
-        `⚡ Debug: Desired Production = ${desiredProduction}, Solar Irradiance = ${solarIrradiance}, Performance Ratio = ${performanceRatio}, Adjustment Factor = ${adjustmentFactor}`
-    );
-    console.log(`⚡ Debug: Calculated Solar Size = ${solarSize.toFixed(2)} kW`);
-
-    return solarSize;
-}
-
-// ✅ Start the Server
-app.listen(3000, () => console.log("🚀 Server running on port 3000"));
+// Log for debugging purposes
+console.log("✅ Server initialization complete");

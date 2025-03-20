@@ -1,13 +1,9 @@
-Slide 1, Element ID: p1_i3
-Brighthouse
-
-
 Slide 1, Element ID: p1_i7
 by Thomas Davenport
 
 
 Slide 2, Element ID: p2_i3
-Why Brighthouse
+Why brighthouse
 
 
 Slide 2, Element ID: p2_i5
@@ -91,7 +87,7 @@ System Overview
 
 
 Slide 4, Element ID: p4_i4
-10.4 kW
+6.5 kW
 
 
 Slide 4, Element ID: p4_i5
@@ -103,7 +99,7 @@ kW solar system
 
 
 Slide 4, Element ID: p4_i7
-32 kWh (2x 16 kWh)
+16 kWh (1x 16 kWh)
 
 
 Slide 4, Element ID: p4_i8
@@ -115,7 +111,7 @@ kWh capacity
 
 
 Slide 4, Element ID: p4_i10
-46750
+$1
 
 
 Slide 4, Element ID: p4_i11
@@ -135,15 +131,15 @@ Solar Details
 
 
 Slide 5, Element ID: p5_i6
-10.4 kW system size
+6.5 kW system size
 
 
 Slide 5, Element ID: p5_i7
-133.3% Energy Offset
+100.0% Energy Offset
 
 
 Slide 5, Element ID: p5_i8
-24 Jinko Solar panels
+15 Jinko Solar panels
 
 
 Slide 5, Element ID: p5_i10
@@ -175,11 +171,11 @@ $0 down payment
 
 
 Slide 5, Element ID: p5_i19
-$46750 financed
+$1 financed
 
 
 Slide 5, Element ID: p5_i20
-$334 monthly payments
+$1 monthly payments
 
 
 Slide 6, Element ID: p6_i2
@@ -191,7 +187,7 @@ Slide 6, Element ID: p6_i4
 
 
 Slide 6, Element ID: p6_i5
-$176
+$1
 
 
 Slide 6, Element ID: p6_i6
@@ -203,7 +199,7 @@ Slide 6, Element ID: p6_i9
 
 
 Slide 6, Element ID: p6_i10
-$300
+$1
 
 
 Slide 6, Element ID: p6_i11
@@ -275,7 +271,8 @@ Address
 
 
 Slide 8, Element ID: p8_i6
-4644 W Jennifer Ave, Fresno, CA 93722
+4644 W Jennifer Ave STE #105
+Fresno, CA 93722
 
 
 Slide 8, Element ID: p8_i8
@@ -291,9 +288,9 @@ Website
 
 
 Slide 8, Element ID: p8_i12
-www.brighthouse.solar
+brighthouse.solar
 
 
 Slide 8, Element ID: p8_i13
-Go Solar : Go Brighthouse!
+Go Solar | Go Brighthouse
 

@@ -12,6 +12,7 @@ async function inspectSlides() {
             keyFile: "credentials.json",
             scopes: ["https://www.googleapis.com/auth/presentations"],
         });
+        console.log("GOOGLE_CLOUD_CREDENTIALS:", process.env.GOOGLE_CLOUD_CREDENTIALS);
 
         const slides = google.slides({ version: "v1", auth });
 

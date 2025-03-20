@@ -1,5 +1,5 @@
 // 🌍 Switch between local and live backend by commenting/uncommenting the correct line:
-const apiUrl = "http://localhost:3000/api/process";  // 🔧 Use for LOCAL TESTING
+const apiUrl = "http://localhost:3000/api/calculateSolarSize";  // 🔧 Use for LOCAL TESTING
 // const apiUrl = "https://solar-calculator-zb73.onrender.com/api/process";  // 🌍 Use for LIVE SERVER
 
 const backendUrl = "http://localhost:3000";
@@ -321,45 +321,118 @@ async function generatePresentation(event) {
     }
     console.log("Starting generatePresentation...");
     try {
-        // Determine active tab
-        const activeTab = document.querySelector(".tab-button.active")?.dataset.tab;
+        // Determine active tab with null check
+        const activeTabElement = document.querySelector(".tab-button.active");
+        if (!activeTabElement) {
+            console.error("❌ Active tab element not found!");
+            const resultsDiv = document.getElementById("results");
+            if (resultsDiv) {
+                resultsDiv.innerHTML = `<p class="error">Configuration error: Unable to determine active tab. Please refresh the page and try again.</p>`;
+            }
+            return;
+        }
+        
+        const activeTab = activeTabElement.dataset.tab;
         const isManualMode = activeTab === "manual-entry";
 
-        // Get input values based on active tab
-        const currentConsumption = Number(isManualMode ? document.getElementById("manualCurrentConsumption")?.value : document.getElementById("currentConsumption")?.value);
-        const desiredProduction = Number(isManualMode ? document.getElementById("manualDesiredProduction")?.value : document.getElementById("desiredProduction")?.value);
-        const panelDirection = (isManualMode ? document.getElementById("manualPanelDirection") : document.getElementById("panelDirection"))?.value;
-        const currentMonthlyAverageBill = Number(isManualMode ? document.getElementById("manualCurrentMonthlyAverageBill")?.value : document.getElementById("currentMonthlyAverageBill")?.value);
-        const batteryCount = Number(isManualMode ? document.getElementById("manualBatteryCount")?.value : document.getElementById("batteryCount")?.value);
-        const shadingElement = isManualMode ? document.getElementById("manualShading") : document.getElementById("shading");
-        const shading = shadingElement ? shadingElement.value.toLowerCase() : "none";
-        const fullAddress = (isManualMode ? document.getElementById("manualFullAddress") : document.getElementById("fullAddress"))?.value.trim();
-        const systemCost = Number(isManualMode ? document.getElementById("manualSystemCost")?.value : document.getElementById("systemCost")?.value);
-        const monthlyCost = Number(isManualMode ? document.getElementById("manualMonthlyCost")?.value : document.getElementById("monthlyCost")?.value);
-        // Use salesCommission from the modal, default to 0 if not set
-        const salesCommission = Number(document.getElementById("salesCommissionModal")?.value) || 0;
+        // Get input values based on active tab with proper null checks
+        // Use default values if elements don't exist or values are invalid
+        const manualCurrentConsumptionElement = isManualMode ? document.getElementById("manualCurrentConsumption") : null;
+        const currentConsumptionElement = !isManualMode ? document.getElementById("currentConsumption") : null;
+        const currentConsumption = Number(
+            (isManualMode && manualCurrentConsumptionElement) ? manualCurrentConsumptionElement.value : 
+            (!isManualMode && currentConsumptionElement) ? currentConsumptionElement.value : 0
+        );
 
+        const manualDesiredProductionElement = isManualMode ? document.getElementById("manualDesiredProduction") : null;
+        const desiredProductionElement = !isManualMode ? document.getElementById("desiredProduction") : null;
+        const desiredProduction = Number(
+            (isManualMode && manualDesiredProductionElement) ? manualDesiredProductionElement.value : 
+            (!isManualMode && desiredProductionElement) ? desiredProductionElement.value : 0
+        );
+
+        const manualPanelDirectionElement = isManualMode ? document.getElementById("manualPanelDirection") : null;
+        const panelDirectionElement = !isManualMode ? document.getElementById("panelDirection") : null;
+        const panelDirection = 
+            (isManualMode && manualPanelDirectionElement) ? manualPanelDirectionElement.value : 
+            (!isManualMode && panelDirectionElement) ? panelDirectionElement.value : "S"; // Default to South
+
+        const manualCurrentMonthlyAverageBillElement = isManualMode ? document.getElementById("manualCurrentMonthlyAverageBill") : null;
+        const currentMonthlyAverageBillElement = !isManualMode ? document.getElementById("currentMonthlyAverageBill") : null;
+        const currentMonthlyAverageBill = Number(
+            (isManualMode && manualCurrentMonthlyAverageBillElement) ? manualCurrentMonthlyAverageBillElement.value : 
+            (!isManualMode && currentMonthlyAverageBillElement) ? currentMonthlyAverageBillElement.value : 0
+        );
+
+        const manualBatteryCountElement = isManualMode ? document.getElementById("manualBatteryCount") : null;
+        const batteryCountElement = !isManualMode ? document.getElementById("batteryCount") : null;
+        const batteryCount = Number(
+            (isManualMode && manualBatteryCountElement) ? manualBatteryCountElement.value : 
+            (!isManualMode && batteryCountElement) ? batteryCountElement.value : 0
+        );
+
+        const manualShadingElement = isManualMode ? document.getElementById("manualShading") : null;
+        const shadingElement = !isManualMode ? document.getElementById("shading") : null;
+        const shading = 
+            (isManualMode && manualShadingElement) ? manualShadingElement.value.toLowerCase() : 
+            (!isManualMode && shadingElement) ? shadingElement.value.toLowerCase() : "none"; // Default to none
+
+        const manualFullAddressElement = isManualMode ? document.getElementById("manualFullAddress") : null;
+        const fullAddressElement = !isManualMode ? document.getElementById("fullAddress") : null;
+        const fullAddress = 
+            (isManualMode && manualFullAddressElement) ? manualFullAddressElement.value.trim() : 
+            (!isManualMode && fullAddressElement) ? fullAddressElement.value.trim() : "";
+
+        const manualSystemCostElement = isManualMode ? document.getElementById("manualSystemCost") : null;
+        const systemCostElement = !isManualMode ? document.getElementById("systemCost") : null;
+        const systemCost = Number(
+            (isManualMode && manualSystemCostElement) ? manualSystemCostElement.value : 
+            (!isManualMode && systemCostElement) ? systemCostElement.value : 0
+        );
+
+        const manualMonthlyCostElement = isManualMode ? document.getElementById("manualMonthlyCost") : null;
+        const monthlyCostElement = !isManualMode ? document.getElementById("monthlyCost") : null;
+        const monthlyCost = Number(
+            (isManualMode && manualMonthlyCostElement) ? manualMonthlyCostElement.value : 
+            (!isManualMode && monthlyCostElement) ? monthlyCostElement.value : 0
+        );
+
+        // Use salesCommission from the modal, default to 0 if not set
+        const salesCommissionElement = document.getElementById("salesCommissionModal");
+        const salesCommission = salesCommissionElement ? Number(salesCommissionElement.value) || 0 : 0;
+
+        // Get UI elements with null checks
         const resultsDiv = document.getElementById("results");
         const downloadLinkDiv = document.getElementById("downloadLink");
         const dropdownContent = document.querySelector(".dropdown-content");
         const dropdownToggle = document.querySelector(".dropdown-toggle");
         const resultsColumn = document.querySelector(".results-column");
 
-        if (!resultsDiv || !downloadLinkDiv || !dropdownContent || !dropdownToggle || !resultsColumn) {
-            console.error("❌ One or more result elements not found!");
+        // Check if all required UI elements exist
+        if (!resultsDiv) {
+            console.error("❌ Results div not found!");
             return;
         }
 
-        // Collapse the dropdown and center the results
-        dropdownToggle.setAttribute("aria-expanded", "false");
-        dropdownContent.classList.add("hidden");
-        resultsColumn.style.margin = "0";
-        resultsColumn.style.width = "100%";
+        // If other UI elements are missing, we can still continue with just the results div
+        if (!downloadLinkDiv || !dropdownContent || !dropdownToggle || !resultsColumn) {
+            console.warn("⚠️ Some UI elements not found, but continuing with available elements");
+        }
+
+        // Collapse the dropdown and center the results if elements exist
+        if (dropdownToggle) dropdownToggle.setAttribute("aria-expanded", "false");
+        if (dropdownContent) dropdownContent.classList.add("hidden");
+        if (resultsColumn) {
+            resultsColumn.style.margin = "0";
+            resultsColumn.style.width = "100%";
+        }
 
         // Clear existing content and show loading state
         resultsDiv.innerHTML = "<p>Loading...</p>";
-        downloadLinkDiv.innerHTML = "";
-        downloadLinkDiv.style.display = "none";
+        if (downloadLinkDiv) {
+            downloadLinkDiv.innerHTML = "";
+            downloadLinkDiv.style.display = "none";
+        }
 
         // Input Validation with Upper Bounds
         if (!currentConsumption || isNaN(currentConsumption) || currentConsumption <= 0) {
@@ -370,18 +443,12 @@ async function generatePresentation(event) {
             resultsDiv.innerHTML = `<p class="error">Current annual consumption is too large. Please enter a value less than 1,000,000 kWh.</p>`;
             return;
         }
-        if (!desiredProduction || isNaN(desiredProduction) || desiredProduction <= 0) {
-            resultsDiv.innerHTML = `<p class="error">Please enter a valid desired annual production (greater than 0).</p>`;
-            return;
-        }
-        if (desiredProduction > 1000000) {
-            resultsDiv.innerHTML = `<p class="error">Desired annual production is too large. Please enter a value less than 1,000,000 kWh.</p>`;
-            return;
-        }
+
         if (!fullAddress) {
             resultsDiv.innerHTML = `<p class="error">Please enter a valid address.</p>`;
             return;
         }
+
         if (!currentMonthlyAverageBill || isNaN(currentMonthlyAverageBill) || currentMonthlyAverageBill <= 0) {
             resultsDiv.innerHTML = `<p class="error">Please enter a valid Current Monthly Average Bill (greater than 0).</p>`;
             return;
@@ -390,6 +457,7 @@ async function generatePresentation(event) {
             resultsDiv.innerHTML = `<p class="error">Current Monthly Average Bill is too large. Please enter a value less than $10,000.</p>`;
             return;
         }
+
         if (isNaN(batteryCount) || batteryCount < 0) {
             resultsDiv.innerHTML = `<p class="error">Please enter a valid battery count (must be a non-negative number).</p>`;
             return;
@@ -398,7 +466,8 @@ async function generatePresentation(event) {
             resultsDiv.innerHTML = `<p class="error">Battery count is too large. Please enter a value less than 100.</p>`;
             return;
         }
-        if (isNaN(systemCost) || systemCost <= 0) {
+
+        if (!systemCost || isNaN(systemCost) || systemCost <= 0) {
             resultsDiv.innerHTML = `<p class="error">Please enter a valid total system cost (must be greater than 0).</p>`;
             return;
         }
@@ -406,152 +475,161 @@ async function generatePresentation(event) {
             resultsDiv.innerHTML = `<p class="error">Total system cost is too large. Please enter a value less than $1,000,000.</p>`;
             return;
         }
-        if (isNaN(monthlyCost) || monthlyCost < 0) {
-            resultsDiv.innerHTML = `<p class="error">Please enter a valid monthly cost with solar (must be a non-negative number).</p>`;
-            return;
-        }
-        if (monthlyCost > 10000) {
-            resultsDiv.innerHTML = `<p class="error">Monthly cost with solar is too large. Please enter a value less than $10,000.</p>`;
-            return;
-        }
-        if (isNaN(salesCommission) || salesCommission < 0) {
-            resultsDiv.innerHTML = `<p class="error">Please enter a valid commission (must be a non-negative number).</p>`;
-            return;
-        }
-        if (salesCommission > 100000) { // Example upper bound: $100,000
-            resultsDiv.innerHTML = `<p class="error">Commission is too large. Please enter a value less than $100,000.</p>`;
-            return;
-        }
-        if (!shading || !["none", "light", "medium", "heavy"].includes(shading.toLowerCase())) {
-            resultsDiv.innerHTML = `<p class="error">Please select a valid shading option.</p>`;
-            return;
-        }
 
+        // Prepare API request
+        const apiUrl = "http://localhost:3000/api/calculateSolarSize"; // Updated to point to Node.js server
         const requestBody = {
+            address: fullAddress,
             currentConsumption,
-            desiredProduction,
-            panelDirection,
-            batteryCount,
             currentMonthlyAverageBill,
-            shading,
-            fullAddress,
+            batteryCount,
+            financingTerm: 25, // Default value if not provided
+            interestRate: 5.99, // Default value if not provided
             systemCost,
+            salesCommission,
             monthlyCost,
-            salesCommission
         };
 
-        const response = await fetch(apiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
-        });
+        // Improved fetch with better error handling
+        try {
+            const response = await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody) ,
+            });
+            
+            // Handle non-JSON responses
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch (jsonError) {
+                console.error("❌ Failed to parse JSON response:", jsonError);
+                resultsDiv.innerHTML = `<p class="error">Invalid server response. Please check that the server is running on port 3000.</p>`;
+                return;
+            }
+            
+            if (!response.ok) {
+                console.error("❌ Server error:", response.status, response.statusText);
+                resultsDiv.innerHTML = `<p class="error">Server error: ${response.status} ${response.statusText}. Please check that the server is running on port 3000.</p>`;
+                return;
+            }
+            
+            console.log("📡 Server Response:", responseData);
+            
+            // Use responseData instead of result
+            const solarSize = responseData.params?.solarSize || "Unknown";
+            resultsDiv.innerHTML = `<p>Calculated Solar Size: ${solarSize} kW</p>`;
+            
+            const totalBatterySize = batteryCount * 16; // Assuming 16 kWh per battery
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("❌ Server error:", errorData);
-            resultsDiv.innerHTML = `<p class="error">Unable to process your request due to a server error. Please try again later.</p>`;
+            // Dynamically calculate cost breakdown
+            let salesRedline = Number(document.getElementById("salesRedline")?.value) || 0;
+            let adderCosts = Number(document.getElementById("adderCosts")?.value) || 0;
+            let batteryCostPerKWh = 1000; // $1000 per kWh
+
+            // If in Wizard mode and System Cost Calculator was used, derive values
+            if (!isManualMode && systemCostElement && systemCostElement.value) {
+                const totalCost = systemCost;
+                const batteryCost = totalBatterySize * batteryCostPerKWh;
+                const solarCost = totalCost - batteryCost - adderCosts - salesCommission;
+                if (solarSize > 0) {
+                    salesRedline = solarCost / (solarSize * 1000); // Reverse calculate sales redline (solarCost = solarSize * 1000 * salesRedline)
+                }
+            } else if (isManualMode) {
+                // In Manual mode, use the total system cost directly and estimate breakdown
+                const totalCost = systemCost;
+                const batteryCost = totalBatterySize * batteryCostPerKWh;
+                adderCosts = 0; // Default to 0 unless specified (could be enhanced with a manual adder input)
+                const solarCost = totalCost - batteryCost - salesCommission;
+                if (solarSize > 0) {
+                    salesRedline = solarCost / (solarSize * 1000); // Estimate sales redline
+                }
+            }
+
+            // Calculate costs using the updated formula: solarCost = solarSize * 1000 * salesRedline
+            const solarCost = solarSize * 1000 * salesRedline;
+            const batteryCost = totalBatterySize * batteryCostPerKWh;
+            const totalCost = solarCost + batteryCost + adderCosts + salesCommission;
+
+            // Calculate percentage of original cost you're paying with solar
+            const percentageOfOriginalCost = (monthlyCost / currentMonthlyAverageBill) * 100;
+            const remainingPercentageText = `${percentageOfOriginalCost.toFixed(2)}%`;
+
+            // Display results even if PDF generation fails
+            resultsDiv.innerHTML = `
+                <div class="results-card">
+                    <h2 class="results-title">Your Solar Results</h2>
+                    <div class="result-section">
+                        <h3 class="section-title">System Overview</h3>
+                        <ul>
+                            <li>Solar System Size: <strong>${solarSize} kW</strong></li>
+                            <li>Battery Size: <strong>${totalBatterySize} kWh (${batteryCount} x 16 kWh)</strong></li>
+                            <li>Number of Panels: <strong>${responseData.params?.panelCount || "Unknown"}</strong></li>
+                        </ul>
+                    </div>
+                    <div class="result-section">
+                        <h3 class="section-title">Energy Overview</h3>
+                        <ul>
+                            <li>Estimated Annual Production: <strong>${Number(responseData.params?.estimatedAnnualProduction || 0).toLocaleString()} kWh</strong></li>
+                            <li>Annual Consumption Before Solar: <strong>${Number(currentConsumption).toLocaleString()} kWh</strong></li>
+                            <li>Energy Offset: <strong>${responseData.params?.energyOffset || "Unknown"}</strong></li>
+                        </ul>
+                    </div>
+                    <div class="result-section">
+                        <h3 class="section-title">Cost Summary</h3>
+                        <ul>
+                            <li>Solar Cost: <strong>$${Number(solarCost).toLocaleString()}</strong></li>
+                            <li>Battery Cost: <strong>$${Number(batteryCost).toLocaleString()}</strong></li>
+                            <li>Adders Cost: <strong>$${Number(adderCosts).toLocaleString()}</strong></li>
+                            <li>Commission: <strong>$${Number(salesCommission).toLocaleString()}</strong></li>
+                            <li>Total Cost: <strong>$${Number(totalCost).toLocaleString()}</strong></li>
+                        </ul>
+                    </div>
+                    <div class="result-section">
+                        <h3 class="section-title">Solar Savings</h3>
+                        <ul>
+                            <li>Monthly Cost Without Solar: <strong>$${Number(currentMonthlyAverageBill).toLocaleString()}</strong></li>
+                            <li>Monthly Cost With Solar: <strong>$${Number(monthlyCost).toLocaleString()}</strong></li>
+                            <li>What You're Getting: <strong>${responseData.params?.energyOffset || "Unknown"} of the electricity you're used to, while only paying ${remainingPercentageText} of what you're used to!</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            // Handle PDF link (or lack thereof) if downloadLinkDiv exists
+            if (downloadLinkDiv) {
+                if (responseData.pdfViewUrl) {
+                    downloadLinkDiv.innerHTML = `<button id="downloadProposal" class="calculate-button">Download Proposal</button>`;
+                    downloadLinkDiv.style.display = "block";
+                    const downloadButton = document.getElementById("downloadProposal");
+                    if (downloadButton) {
+                        downloadButton.addEventListener("click", () => window.open(responseData.pdfViewUrl, "_blank"));
+                    }
+                } else if (responseData.pptUrl) {
+                    console.warn("⚠️ PDF generation failed, but PowerPoint URL is available.");
+                    downloadLinkDiv.innerHTML = `<p class="warning">Proposal PDF is unavailable at this time, but you can view the presentation here: <a href="${responseData.pptUrl}" target="_blank">Open Presentation</a></p>`;
+                    downloadLinkDiv.style.display = "block";
+                } else {
+                    console.warn("⚠️ Both PDF and PowerPoint generation failed.");
+                    downloadLinkDiv.innerHTML = `<p class="warning">Proposal PDF and presentation are unavailable at this time, but your results are shown above.</p>`;
+                    downloadLinkDiv.style.display = "block";
+                }
+            }
+        } catch (error) {
+            console.error("❌ Network error:", error);
+            resultsDiv.innerHTML = `<p class="error">Network error. Please check that the server is running on port 3000.</p>`;
             return;
-        }
-
-        const result = await response.json();
-        const solarSize = result.params.solarSize;
-        const totalBatterySize = batteryCount * 16; // Assuming 16 kWh per battery
-
-        // Dynamically calculate cost breakdown
-        let salesRedline = Number(document.getElementById("salesRedline")?.value) || 0;
-        let adderCosts = Number(document.getElementById("adderCosts")?.value) || 0;
-        let batteryCostPerKWh = 1000; // $1000 per kWh
-
-        // If in Wizard mode and System Cost Calculator was used, derive values
-        if (!isManualMode && document.getElementById("systemCost").value) {
-            const totalCost = systemCost;
-            const batteryCost = totalBatterySize * batteryCostPerKWh;
-            const solarCost = totalCost - batteryCost - adderCosts - salesCommission;
-            if (solarSize > 0) {
-                salesRedline = solarCost / (solarSize * 1000); // Reverse calculate sales redline (solarCost = solarSize * 1000 * salesRedline)
-            }
-        } else if (isManualMode) {
-            // In Manual mode, use the total system cost directly and estimate breakdown
-            const totalCost = systemCost;
-            const batteryCost = totalBatterySize * batteryCostPerKWh;
-            adderCosts = 0; // Default to 0 unless specified (could be enhanced with a manual adder input)
-            const solarCost = totalCost - batteryCost - salesCommission;
-            if (solarSize > 0) {
-                salesRedline = solarCost / (solarSize * 1000); // Estimate sales redline
-            }
-        }
-
-        // Calculate costs using the updated formula: solarCost = solarSize * 1000 * salesRedline
-        const solarCost = solarSize * 1000 * salesRedline;
-        const batteryCost = totalBatterySize * batteryCostPerKWh;
-        const totalCost = solarCost + batteryCost + adderCosts + salesCommission;
-
-        // Calculate percentage of original cost you're paying with solar
-        const percentageOfOriginalCost = (monthlyCost / currentMonthlyAverageBill) * 100;
-        const remainingPercentageText = `${percentageOfOriginalCost.toFixed(2)}%`;
-
-        // Display results even if PDF generation fails
-        resultsDiv.innerHTML = `
-            <div class="results-card">
-                <h2 class="results-title">Your Solar Results</h2>
-                <div class="result-section">
-                    <h3 class="section-title">System Overview</h3>
-                    <ul>
-                        <li>Solar System Size: <strong>${solarSize} kW</strong></li>
-                        <li>Battery Size: <strong>${totalBatterySize} kWh (${batteryCount} x 16 kWh)</strong></li>
-                        <li>Number of Panels: <strong>${result.params.panelCount}</strong></li>
-                    </ul>
-                </div>
-                <div class="result-section">
-                    <h3 class="section-title">Energy Overview</h3>
-                    <ul>
-                        <li>Estimated Annual Production: <strong>${Number(result.params.estimatedAnnualProduction).toLocaleString()} kWh</strong></li>
-                        <li>Annual Consumption Before Solar: <strong>${Number(currentConsumption).toLocaleString()} kWh</strong></li>
-                        <li>Energy Offset: <strong>${result.params.energyOffset}</strong></li>
-                    </ul>
-                </div>
-                <div class="result-section">
-                    <h3 class="section-title">Cost Summary</h3>
-                    <ul>
-                        <li>Solar Cost: <strong>$${Number(solarCost).toLocaleString()}</strong></li>
-                        <li>Battery Cost: <strong>$${Number(batteryCost).toLocaleString()}</strong></li>
-                        <li>Adders Cost: <strong>$${Number(adderCosts).toLocaleString()}</strong></li>
-                        <li>Commission: <strong>$${Number(salesCommission).toLocaleString()}</strong></li>
-                        <li>Total Cost: <strong>$${Number(totalCost).toLocaleString()}</strong></li>
-                    </ul>
-                </div>
-                <div class="result-section">
-                    <h3 class="section-title">Solar Savings</h3>
-                    <ul>
-                        <li>Monthly Cost Without Solar: <strong>$${Number(currentMonthlyAverageBill).toLocaleString()}</strong></li>
-                        <li>Monthly Cost With Solar: <strong>$${Number(monthlyCost).toLocaleString()}</strong></li>
-                        <li>What You're Getting: <strong>${result.params.energyOffset} of the electricity you're used to, while only paying ${remainingPercentageText} of what you're used to!</strong></li>
-                    </ul>
-                </div>
-            </div>
-        `;
-
-        // Handle PDF link (or lack thereof)
-        if (result.pdfViewUrl) {
-            downloadLinkDiv.innerHTML = `<button id="downloadProposal" class="calculate-button">Download Proposal</button>`;
-            downloadLinkDiv.style.display = "block";
-            document.getElementById("downloadProposal").addEventListener("click", () => window.open(result.pdfViewUrl, "_blank"));
-        } else if (result.pptUrl) {
-            console.warn("⚠️ PDF generation failed, but PowerPoint URL is available.");
-            downloadLinkDiv.innerHTML = `<p class="warning">Proposal PDF is unavailable at this time, but you can view the presentation here: <a href="${result.pptUrl}" target="_blank">Open Presentation</a></p>`;
-            downloadLinkDiv.style.display = "block";
-        } else {
-            console.warn("⚠️ Both PDF and PowerPoint generation failed.");
-            downloadLinkDiv.innerHTML = `<p class="warning">Proposal PDF and presentation are unavailable at this time, but your results are shown above.</p>`;
-            downloadLinkDiv.style.display = "block";
         }
     } catch (error) {
         console.error("❌ Error in generatePresentation:", error);
         const resultsDiv = document.getElementById("results");
-        resultsDiv.innerHTML = `<p class="error">An unexpected error occurred. Please try again later or contact support.</p>`;
+        if (resultsDiv) {
+            resultsDiv.innerHTML = `<p class="error">An unexpected error occurred. Please try again later or contact support.</p>`;
+        }
     }
     console.log("generatePresentation completed successfully.");
 }
+
 
 // ✅ Handle Battery Sizing Help Modal
 function setupBatteryHelp() {

@@ -9,63 +9,6 @@
         "styles": []
       },
       {
-        "elementId": "p1_i3",
-        "textContent": "Brighthouse\n",
-        "styles": [
-          null,
-          {
-            "backgroundColor": {},
-            "foregroundColor": {
-              "opaqueColor": {
-                "rgbColor": {
-                  "red": 1,
-                  "green": 0.88235295,
-                  "blue": 0.3019608
-                }
-              }
-            },
-            "bold": true,
-            "italic": false,
-            "fontFamily": "Comfortaa",
-            "fontSize": {
-              "magnitude": 43,
-              "unit": "PT"
-            },
-            "baselineOffset": "NONE",
-            "smallCaps": false,
-            "strikethrough": false,
-            "underline": false,
-            "weightedFontFamily": {
-              "fontFamily": "Comfortaa",
-              "weight": 700
-            }
-          },
-          {
-            "backgroundColor": {},
-            "foregroundColor": {
-              "opaqueColor": {
-                "rgbColor": {}
-              }
-            },
-            "bold": false,
-            "italic": false,
-            "fontFamily": "Arial",
-            "fontSize": {
-              "magnitude": 43,
-              "unit": "PT"
-            },
-            "baselineOffset": "NONE",
-            "smallCaps": false,
-            "strikethrough": false,
-            "underline": false,
-            "weightedFontFamily": {
-              "fontFamily": "Arial",
-              "weight": 400
-            }
-          }
-        ]
-      },
-      {
         "elementId": "p1_i4",
         "textContent": "",
         "styles": []
@@ -136,6 +79,16 @@
             }
           }
         ]
+      },
+      {
+        "elementId": "g3388ba45c5b_2_0",
+        "textContent": "",
+        "styles": []
+      },
+      {
+        "elementId": "g3388ba45c5b_3_0",
+        "textContent": "",
+        "styles": []
       }
     ]
   },
@@ -150,9 +103,63 @@
       },
       {
         "elementId": "p2_i3",
-        "textContent": "Why Brighthouse\n",
+        "textContent": "Why brighthouse\n",
         "styles": [
           null,
+          {
+            "backgroundColor": {},
+            "foregroundColor": {
+              "opaqueColor": {
+                "rgbColor": {
+                  "red": 1,
+                  "green": 0.88235295,
+                  "blue": 0.3019608
+                }
+              }
+            },
+            "bold": true,
+            "italic": false,
+            "fontFamily": "Comfortaa",
+            "fontSize": {
+              "magnitude": 43,
+              "unit": "PT"
+            },
+            "baselineOffset": "NONE",
+            "smallCaps": false,
+            "strikethrough": false,
+            "underline": false,
+            "weightedFontFamily": {
+              "fontFamily": "Comfortaa",
+              "weight": 700
+            }
+          },
+          {
+            "backgroundColor": {},
+            "foregroundColor": {
+              "opaqueColor": {
+                "rgbColor": {
+                  "red": 1,
+                  "green": 0.88235295,
+                  "blue": 0.3019608
+                }
+              }
+            },
+            "bold": true,
+            "italic": false,
+            "fontFamily": "Comfortaa",
+            "fontSize": {
+              "magnitude": 43,
+              "unit": "PT"
+            },
+            "baselineOffset": "NONE",
+            "smallCaps": false,
+            "strikethrough": false,
+            "underline": false,
+            "weightedFontFamily": {
+              "fontFamily": "Comfortaa",
+              "weight": 700
+            }
+          },
           {
             "backgroundColor": {},
             "foregroundColor": {
@@ -908,6 +915,11 @@
             }
           }
         ]
+      },
+      {
+        "elementId": "g3388ba45c5b_3_1",
+        "textContent": "",
+        "styles": []
       }
     ]
   },
@@ -1313,6 +1325,11 @@
             }
           }
         ]
+      },
+      {
+        "elementId": "g3388ba45c5b_3_2",
+        "textContent": "",
+        "styles": []
       }
     ]
   },
@@ -1384,7 +1401,7 @@
       },
       {
         "elementId": "p4_i4",
-        "textContent": "10.4 kW\n",
+        "textContent": "6.5 kW\n",
         "styles": [
           null,
           {
@@ -1559,7 +1576,7 @@
       },
       {
         "elementId": "p4_i7",
-        "textContent": "32 kWh (2x 16 kWh)\n",
+        "textContent": "16 kWh (1x 16 kWh)\n",
         "styles": [
           null,
           {
@@ -1734,7 +1751,7 @@
       },
       {
         "elementId": "p4_i10",
-        "textContent": "46750\n",
+        "textContent": "$1\n",
         "styles": [
           null,
           {
@@ -1768,12 +1785,16 @@
             "backgroundColor": {},
             "foregroundColor": {
               "opaqueColor": {
-                "rgbColor": {}
+                "rgbColor": {
+                  "red": 0.84313726,
+                  "green": 0.83137256,
+                  "blue": 0.8
+                }
               }
             },
-            "bold": false,
+            "bold": true,
             "italic": false,
-            "fontFamily": "Arial",
+            "fontFamily": "Comfortaa",
             "fontSize": {
               "magnitude": 51,
               "unit": "PT"
@@ -1783,8 +1804,8 @@
             "strikethrough": false,
             "underline": false,
             "weightedFontFamily": {
-              "fontFamily": "Arial",
-              "weight": 400
+              "fontFamily": "Comfortaa",
+              "weight": 700
             }
           }
         ]
@@ -1902,6 +1923,11 @@
             }
           }
         ]
+      },
+      {
+        "elementId": "g3388ba45c5b_3_3",
+        "textContent": "",
+        "styles": []
       }
     ]
   },
@@ -2035,7 +2061,7 @@
       },
       {
         "elementId": "p5_i6",
-        "textContent": "10.4 kW system size\n",
+        "textContent": "6.5 kW system size\n",
         "styles": [
           null,
           {
@@ -2096,7 +2122,7 @@
       },
       {
         "elementId": "p5_i7",
-        "textContent": "133.3% Energy Offset\n",
+        "textContent": "100.0% Energy Offset\n",
         "styles": [
           null,
           {
@@ -2157,7 +2183,7 @@
       },
       {
         "elementId": "p5_i8",
-        "textContent": "24 Jinko Solar panels\n",
+        "textContent": "15 Jinko Solar panels\n",
         "styles": [
           null,
           {
@@ -2632,7 +2658,7 @@
       },
       {
         "elementId": "p5_i19",
-        "textContent": "$46750 financed\n",
+        "textContent": "$1 financed\n",
         "styles": [
           null,
           {
@@ -2666,12 +2692,16 @@
             "backgroundColor": {},
             "foregroundColor": {
               "opaqueColor": {
-                "rgbColor": {}
+                "rgbColor": {
+                  "red": 0.84313726,
+                  "green": 0.83137256,
+                  "blue": 0.8
+                }
               }
             },
             "bold": false,
             "italic": false,
-            "fontFamily": "Arial",
+            "fontFamily": "Raleway",
             "fontSize": {
               "magnitude": 19,
               "unit": "PT"
@@ -2681,7 +2711,7 @@
             "strikethrough": false,
             "underline": false,
             "weightedFontFamily": {
-              "fontFamily": "Arial",
+              "fontFamily": "Raleway",
               "weight": 400
             }
           }
@@ -2689,7 +2719,7 @@
       },
       {
         "elementId": "p5_i20",
-        "textContent": "$334 monthly payments\n",
+        "textContent": "$1 monthly payments\n",
         "styles": [
           null,
           {
@@ -2723,12 +2753,16 @@
             "backgroundColor": {},
             "foregroundColor": {
               "opaqueColor": {
-                "rgbColor": {}
+                "rgbColor": {
+                  "red": 0.84313726,
+                  "green": 0.83137256,
+                  "blue": 0.8
+                }
               }
             },
             "bold": false,
             "italic": false,
-            "fontFamily": "Arial",
+            "fontFamily": "Raleway",
             "fontSize": {
               "magnitude": 19,
               "unit": "PT"
@@ -2738,11 +2772,16 @@
             "strikethrough": false,
             "underline": false,
             "weightedFontFamily": {
-              "fontFamily": "Arial",
+              "fontFamily": "Raleway",
               "weight": 400
             }
           }
         ]
+      },
+      {
+        "elementId": "g3388ba45c5b_3_4",
+        "textContent": "",
+        "styles": []
       }
     ]
   },
@@ -2898,7 +2937,7 @@
       },
       {
         "elementId": "p6_i5",
-        "textContent": "$176\n",
+        "textContent": "$1\n",
         "styles": [
           null,
           {
@@ -3083,7 +3122,7 @@
       },
       {
         "elementId": "p6_i10",
-        "textContent": "$300\n",
+        "textContent": "$1\n",
         "styles": [
           null,
           {
@@ -3255,6 +3294,11 @@
             }
           }
         ]
+      },
+      {
+        "elementId": "g3388ba45c5b_3_5",
+        "textContent": "",
+        "styles": []
       }
     ]
   },
@@ -4032,6 +4076,11 @@
             }
           }
         ]
+      },
+      {
+        "elementId": "g3388ba45c5b_3_6",
+        "textContent": "",
+        "styles": []
       }
     ]
   },
@@ -4165,8 +4214,63 @@
       },
       {
         "elementId": "p8_i6",
-        "textContent": "4644 W Jennifer Ave, Fresno, CA 93722\n",
+        "textContent": "4644 W Jennifer Ave STE #105\nFresno, CA 93722\n",
         "styles": [
+          null,
+          {
+            "backgroundColor": {},
+            "foregroundColor": {
+              "opaqueColor": {
+                "rgbColor": {
+                  "red": 0.84313726,
+                  "green": 0.83137256,
+                  "blue": 0.8
+                }
+              }
+            },
+            "bold": false,
+            "italic": false,
+            "fontFamily": "Raleway",
+            "fontSize": {
+              "magnitude": 19,
+              "unit": "PT"
+            },
+            "baselineOffset": "NONE",
+            "smallCaps": false,
+            "strikethrough": false,
+            "underline": false,
+            "weightedFontFamily": {
+              "fontFamily": "Raleway",
+              "weight": 400
+            }
+          },
+          {
+            "backgroundColor": {},
+            "foregroundColor": {
+              "opaqueColor": {
+                "rgbColor": {
+                  "red": 0.84313726,
+                  "green": 0.83137256,
+                  "blue": 0.8
+                }
+              }
+            },
+            "bold": false,
+            "italic": false,
+            "fontFamily": "Raleway",
+            "fontSize": {
+              "magnitude": 19,
+              "unit": "PT"
+            },
+            "baselineOffset": "NONE",
+            "smallCaps": false,
+            "strikethrough": false,
+            "underline": false,
+            "weightedFontFamily": {
+              "fontFamily": "Raleway",
+              "weight": 400
+            }
+          },
           null,
           {
             "backgroundColor": {},
@@ -4403,7 +4507,7 @@
       },
       {
         "elementId": "p8_i12",
-        "textContent": "www.brighthouse.solar\n",
+        "textContent": "brighthouse.solar\n",
         "styles": [
           null,
           {
@@ -4459,9 +4563,63 @@
       },
       {
         "elementId": "p8_i13",
-        "textContent": "Go Solar : Go Brighthouse!\n",
+        "textContent": "Go Solar | Go Brighthouse\n",
         "styles": [
           null,
+          {
+            "backgroundColor": {},
+            "foregroundColor": {
+              "opaqueColor": {
+                "rgbColor": {
+                  "red": 0.84313726,
+                  "green": 0.83137256,
+                  "blue": 0.8
+                }
+              }
+            },
+            "bold": false,
+            "italic": false,
+            "fontFamily": "Raleway",
+            "fontSize": {
+              "magnitude": 19,
+              "unit": "PT"
+            },
+            "baselineOffset": "NONE",
+            "smallCaps": false,
+            "strikethrough": false,
+            "underline": false,
+            "weightedFontFamily": {
+              "fontFamily": "Raleway",
+              "weight": 400
+            }
+          },
+          {
+            "backgroundColor": {},
+            "foregroundColor": {
+              "opaqueColor": {
+                "rgbColor": {
+                  "red": 0.84313726,
+                  "green": 0.83137256,
+                  "blue": 0.8
+                }
+              }
+            },
+            "bold": false,
+            "italic": false,
+            "fontFamily": "Raleway",
+            "fontSize": {
+              "magnitude": 19,
+              "unit": "PT"
+            },
+            "baselineOffset": "NONE",
+            "smallCaps": false,
+            "strikethrough": false,
+            "underline": false,
+            "weightedFontFamily": {
+              "fontFamily": "Raleway",
+              "weight": 400
+            }
+          },
           {
             "backgroundColor": {},
             "foregroundColor": {
@@ -4513,6 +4671,11 @@
             }
           }
         ]
+      },
+      {
+        "elementId": "g3388ba45c5b_3_7",
+        "textContent": "",
+        "styles": []
       }
     ]
   }
