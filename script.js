@@ -1,12 +1,12 @@
-const API_BASE_PATH = "/api/calculateSolarSize";
-let googleMapsLoaded = false;
+// 🌍 Switch between local and live backend by commenting/uncommenting the correct line:
+// const apiUrl = "http://localhost:3000/api/calculateSolarSize";  // 🔧 Use for LOCAL TESTING
+const apiUrl = "https://solar-calculator-zb73.onrender.com/api/calculateSolarSize";  // 🌍 Use for LIVE SERVER
 
-// Callback function for Google Maps API
-function initMap() {
-    console.log("✅ Google Maps API loaded successfully");
-    googleMapsLoaded = true;
-    initializeAutocomplete();
-}
+// const backendUrl = "http://localhost:3000";
+const backendUrl = "https://solar-calculator-zb73.onrender.com";
+
+console.log(`🌐 Using API URL: ${apiUrl}`);
+console.log(`🌐 Using Backend URL: ${backendUrl}`);
 
 // Global form submission prevention
 window.addEventListener('DOMContentLoaded', function() {
@@ -20,104 +20,85 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 // Initialize Places Autocomplete for both Wizard and Manual Entry modes
+let googleMapsLoaded = false;
+
+// Add a global variable to store the selected place object
+let selectedPlace = null;
+
+window.initMap = function() {
+    console.log("✅ initMap called by Google Maps API");
+    if (typeof initializeAutocomplete === "function") {
+        initializeAutocomplete();
+    } else {
+        console.log("⏳ Waiting for initializeAutocomplete...");
+        setTimeout(window.initMap, 500); // Retry after 500ms
+    }
+};
+
 function initializeAutocomplete() {
-    // Check if Google Maps API is loaded
-    if (!googleMapsLoaded || typeof google === "undefined" || !google.maps || !google.maps.places) {
-        console.error("❌ Google Maps API not loaded yet. Retrying in 1 second...");
-        setTimeout(initializeAutocomplete, 1000); // Retry after 1 second
+    console.log("🔧 Initializing Google Places Autocomplete...");
+    if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.error("❌ Google Maps Places library not loaded");
         return;
     }
+    console.log("✅ Google Maps API is loaded, setting up Autocomplete");
 
-    console.log("📍 Initializing Places Autocomplete...");
+    // Wizard Mode Autocomplete
+    const fullAddressInput = document.getElementById("fullAddress");
+    if (fullAddressInput) {
+        const autocomplete = new google.maps.places.Autocomplete(fullAddressInput, {
+            types: ["geocode"],
+            componentRestrictions: { country: "us" }
+        });
+        autocomplete.addListener("place_changed", () => {
+            const place = autocomplete.getPlace();
+            if (!place || !place.geometry) {
+                console.error("❌ No place details found. Try selecting an address from the dropdown.");
+                return;
+            }
+            console.log("📍 Selected Address:", place.formatted_address);
+            fullAddressInput.dataset.address = place.formatted_address || "";
+            selectedPlace = place; // ✅ Ensure `selectedPlace` is assigned correctly
+        });
+        
 
-    // Initialize Places Autocomplete for Wizard Mode
-    const addressInput = document.getElementById("fullAddress");
-    if (addressInput) {
-        try {
-            const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-                types: ["geocode"],
-                componentRestrictions: { country: "us" }
-            });
-
-            autocomplete.addListener("place_changed", () => {
-                const place = autocomplete.getPlace();
-                if (!place.geometry) {
-                    console.error("❌ No geometry available for selected place (Wizard):", place);
-                    addressInput.value = ""; // Clear the input if the place is invalid
-                    const changeEvent = new Event("change");
-                    addressInput.dispatchEvent(changeEvent);
-                    if (typeof updateBuildSystemButtonState === "function") {
-                        updateBuildSystemButtonState();
-                    } else {
-                        console.warn("⚠️ updateBuildSystemButtonState is not defined");
-                    }
-                    return;
-                }
-
-                console.log("📍 Selected Address (Wizard):", place.formatted_address);
-                addressInput.value = place.formatted_address; // Ensure the input reflects the selected address
-                const changeEvent = new Event("change");
-                addressInput.dispatchEvent(changeEvent);
-
-                if (typeof updateBuildSystemButtonState === "function") {
-                    updateBuildSystemButtonState();
-                } else {
-                    console.warn("⚠️ updateBuildSystemButtonState is not defined");
-                }
-            });
-        } catch (error) {
-            console.error("❌ Failed to initialize Autocomplete for Wizard Mode:", error);
-        }
-    } else {
-        console.warn("⚠️ fullAddress input not found for Wizard Mode");
+        // Log input events for debugging
+        fullAddressInput.addEventListener("input", () => {
+            console.log("Input event on fullAddress:", fullAddressInput.value);
+            // Clear the selected place if the user modifies the input
+            if (fullAddressInput.value !== fullAddressInput.dataset.address) {
+                selectedPlace = null;
+            }
+        });
     }
 
-    // Initialize Places Autocomplete for Manual Entry Mode
-    const manualAddressInput = document.getElementById("manualFullAddress");
-    if (manualAddressInput) {
-        try {
-            const manualAutocomplete = new google.maps.places.Autocomplete(manualAddressInput, {
-                types: ["geocode"],
-                componentRestrictions: { country: "us" }
-            });
+    // Manual Entry Mode Autocomplete
+    const manualFullAddressInput = document.getElementById("manualFullAddress");
+    if (manualFullAddressInput) {
+        const manualAutocomplete = new google.maps.places.Autocomplete(manualFullAddressInput, {
+            types: ["geocode"],
+            componentRestrictions: { country: "us" }
+        });
+        manualAutocomplete.addListener("place_changed", () => {
+            const place = manualAutocomplete.getPlace();
+            console.log("📍 Selected Address (Manual):", place.formatted_address);
+            console.log("📍 Full place object (Manual):", place);
+            manualFullAddressInput.dataset.address = place.formatted_address || "";
+            // Store the full place object
+            selectedPlace = place;
+        });
 
-            manualAutocomplete.addListener("place_changed", () => {
-                const place = manualAutocomplete.getPlace();
-                if (!place.geometry) {
-                    console.error("❌ No geometry available for selected place (Manual):", place);
-                    manualAddressInput.value = ""; // Clear the input if the place is invalid
-                    const changeEvent = new Event("change");
-                    manualAddressInput.dispatchEvent(changeEvent);
-                    if (typeof updateCalculateButtonState === "function") {
-                        updateCalculateButtonState();
-                    } else {
-                        console.warn("⚠️ updateCalculateButtonState is not defined");
-                    }
-                    return;
-                }
-
-                console.log("📍 Selected Address (Manual):", place.formatted_address);
-                manualAddressInput.value = place.formatted_address; // Ensure the input reflects the selected address
-                const changeEvent = new Event("change");
-                manualAddressInput.dispatchEvent(changeEvent);
-
-                if (typeof updateCalculateButtonState === "function") {
-                    updateCalculateButtonState();
-                } else {
-                    console.warn("⚠️ updateCalculateButtonState is not defined");
-                }
-            });
-        } catch (error) {
-            console.error("❌ Failed to initialize Autocomplete for Manual Entry Mode:", error);
-        }
-    } else {
-        console.warn("⚠️ manualFullAddress input not found for Manual Entry Mode");
+        // Log input events for debugging
+        manualFullAddressInput.addEventListener("input", () => {
+            console.log("Input event on manualFullAddress:", manualFullAddressInput.value);
+            // Clear the selected place if the user modifies the input
+            if (manualFullAddressInput.value !== manualFullAddressInput.dataset.address) {
+                selectedPlace = null;
+            }
+        });
     }
 
-    // Log if neither input was found
-    if (!addressInput && !manualAddressInput) {
-        console.error("❌ Neither fullAddress nor manualFullAddress input fields were found!");
-    }
+    console.log("✅ Autocomplete setup complete");
 }
 
 // ✅ Toggle Dropdown Functionality
@@ -306,10 +287,10 @@ async function buildSystem() {
     const panelDirection = document.getElementById("panelDirection")?.value;
     const shadingElement = document.getElementById("shading");
     const shading = shadingElement ? shadingElement.value.toLowerCase() : "none";
-    const fullAddress = document.getElementById("fullAddress")?.value.trim();
+    const fullAddressInput = document.getElementById("fullAddress");
+    const fullAddress = fullAddressInput?.dataset.address || "";
     const systemSizeDisplay = document.getElementById("systemSizeDisplay");
     const addBatteriesButton = document.getElementById("addBatteriesButton");
-    // Commission is now sourced from the modal or defaults to 0
     const salesCommission = Number(document.getElementById("salesCommissionModal")?.value) || 0;
 
     if (!systemSizeDisplay || !addBatteriesButton) {
@@ -330,8 +311,8 @@ async function buildSystem() {
         systemSizeDisplay.innerHTML = `<p class="error">Please enter a valid desired annual production.</p>`;
         return;
     }
-    if (!fullAddress) {
-        systemSizeDisplay.innerHTML = `<p class="error">Please enter a valid address.</p>`;
+    if (!fullAddress || !selectedPlace) {
+        systemSizeDisplay.innerHTML = `<p class="error">Please select a valid address from the suggestions.</p>`;
         return;
     }
     if (!shading || !["none", "light", "medium", "heavy"].includes(shading.toLowerCase())) {
@@ -344,7 +325,7 @@ async function buildSystem() {
         desiredProduction,
         panelDirection,
         shading,
-        fullAddress,
+        address: selectedPlace.formatted_address, // Send the formatted_address as a string under the "address" field
         batteryCount: 0,
         currentMonthlyAverageBill: 0,
         systemCost: 0,
@@ -352,9 +333,11 @@ async function buildSystem() {
         salesCommission
     };
 
+    console.log("Sending requestBody to backend:", requestBody);
+
     try {
         systemSizeDisplay.innerHTML = "<p>Calculating...</p>";
-        const response = await fetch(API_BASE_PATH, {
+        const response = await fetch(apiUrl, { // Updated to use apiUrl
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(requestBody),
@@ -451,8 +434,8 @@ async function generatePresentation(event) {
         const manualFullAddressElement = isManualMode ? document.getElementById("manualFullAddress") : null;
         const fullAddressElement = !isManualMode ? document.getElementById("fullAddress") : null;
         const fullAddress = 
-            (isManualMode && manualFullAddressElement) ? manualFullAddressElement.value.trim() : 
-            (!isManualMode && fullAddressElement) ? fullAddressElement.value.trim() : "";
+            (isManualMode && manualFullAddressElement) ? manualFullAddressElement.dataset.address || "" : 
+            (!isManualMode && fullAddressElement) ? fullAddressElement.dataset.address || "" : "";
 
         const manualSystemCostElement = isManualMode ? document.getElementById("manualSystemCost") : null;
         const systemCostElement = !isManualMode ? document.getElementById("systemCost") : null;
@@ -527,7 +510,7 @@ async function generatePresentation(event) {
             return;
         }
 
-        if (!fullAddress) {
+        if (!fullAddress || !selectedPlace) {
             resultsDiv.innerHTML = `<p class="error">Please select a valid address from the suggestions.</p>`;
             return;
         }
@@ -560,9 +543,8 @@ async function generatePresentation(event) {
         }
 
         // Prepare API request
-        const apiUrl = API_BASE_PATH; // Use relative URL
         const requestBody = {
-            address: fullAddress,
+            address: selectedPlace.formatted_address, // Send the formatted_address as a string
             currentConsumption,
             currentMonthlyAverageBill,
             batteryCount,
@@ -577,7 +559,7 @@ async function generatePresentation(event) {
 
         // Improved fetch with better error handling
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch(apiUrl, { // Updated to use apiUrl
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(requestBody),
@@ -596,7 +578,7 @@ async function generatePresentation(event) {
                 responseData = rawResponse ? JSON.parse(rawResponse) : null;
             } catch (jsonError) {
                 console.error("❌ Failed to parse JSON response:", jsonError);
-                resultsDiv.innerHTML = `<p class="error">Invalid server response: ${jsonError.message}. Raw response: ${rawResponse || "empty"}. Please check that the server is running on port 3000.</p>`;
+                resultsDiv.innerHTML = `<p class="error">Invalid server response: ${jsonError.message}. Raw response: ${rawResponse || "empty"}. Please check that the server is running.</p>`;
                 return;
             }
         
@@ -691,11 +673,13 @@ async function generatePresentation(event) {
             // Handle PDF link (or lack thereof) if downloadLinkDiv exists
             if (downloadLinkDiv) {
                 if (responseData.pdfViewUrl) {
+                    // Construct the full PDF URL using backendUrl
+                    const fullPdfUrl = `${backendUrl}${responseData.pdfViewUrl}`;
                     downloadLinkDiv.innerHTML = `<button id="downloadProposal" class="calculate-button">Download Proposal</button>`;
                     downloadLinkDiv.style.display = "block";
                     const downloadButton = document.getElementById("downloadProposal");
                     if (downloadButton) {
-                        downloadButton.addEventListener("click", () => window.open(responseData.pdfViewUrl, "_blank"));
+                        downloadButton.addEventListener("click", () => window.open(fullPdfUrl, "_blank"));
                     }
                 } else if (responseData.pptUrl) {
                     console.warn("⚠️ PDF generation failed, but PowerPoint URL is available.");
@@ -709,12 +693,12 @@ async function generatePresentation(event) {
             }
         } catch (error) {
             console.error("❌ Network error:", error);
-            resultsDiv.innerHTML = `<p class="error">Network error. Please check that the server is running on port 3000.</p>`;
+            resultsDiv.innerHTML = `<p class="error">Network error. Please check that the server is running.</p>`;
             return;
         }
     } catch (error) {
         console.error("❌ Network error:", error);
-        resultsDiv.innerHTML = `<p class="error">Network error: ${error.message}. Please check that the server is running on port 3000.</p>`;
+        resultsDiv.innerHTML = `<p class="error">Network error: ${error.message}. Please check that the server is running.</p>`;
         return;
     }
 }
@@ -1113,58 +1097,153 @@ function calculateSystemCost() {
 
 // Function to recommend battery count (fallback if setupBatteryHelp isn't used)
 function recommendBatteryCount() {
-    const systemSize = parseFloat(document.getElementById("systemSizeDisplay").textContent.replace("System Size: ", "").replace(" kW", "")) || 0;
+    const systemSizeText = document.getElementById("systemSizeDisplay").textContent;
+    const solarSizeMatch = systemSizeText.match(/System Size: (\d+\.\d+) kW/);
+    if (!solarSizeMatch) {
+        alert("Please calculate the system size first by clicking 'Build System'.");
+        return;
+    }
+
+    const systemSize = parseFloat(solarSizeMatch[1]) || 0;
     const recommendedStorage = systemSize * 2; // 2 kWh of battery storage per 1 kW of system size
-    const batteryCount = Math.ceil(recommendedStorage / 13.5); // Assuming each battery is 13.5 kWh
+    const batteryCount = Math.ceil(recommendedStorage / 16); // Assuming each battery is 16 kWh
 
     document.getElementById("recommendedBatteryCount").textContent = batteryCount;
-    document.getElementById("recommendedBatteryStorage").textContent = recommendedStorage.toFixed(2);
+    document.getElementById("recommendedBatteryStorage").textContent = (batteryCount * 16).toFixed(2);
     showModal("batteryHelpModal");
 }
 
 // Function to apply recommended battery count
 function applyRecommendation() {
     const recommendedCount = parseInt(document.getElementById("recommendedBatteryCount").textContent) || 0;
-    document.getElementById("batteryCount").value = recommendedCount;
+    const batteryCountInput = document.getElementById("batteryCount");
+    const totalBatterySizeDisplay = document.getElementById("totalBatterySizeDisplay");
+
+    if (batteryCountInput && totalBatterySizeDisplay) {
+        batteryCountInput.value = recommendedCount;
+        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${recommendedCount * 16} kWh`;
+        window.cachedBatteryCount = recommendedCount;
+    } else {
+        console.error("❌ Battery Count input or Total Battery Size Display not found!");
+    }
+
     closeModal("batteryHelpModal");
-    updateTotalBatterySize();
+    updateCalculateButtonState();
+    updateBuildSystemButtonState();
 }
 
 // Function to overwrite battery recommendation
 function overwriteRecommendation() {
     closeModal("batteryHelpModal");
     showModal("batteryCountModal");
+    updateBatteryStorageDisplay();
 }
 
 // Function to update total battery storage display
 function updateTotalBatterySize() {
     const batteryCount = parseInt(document.getElementById("batteryCount").value) || 0;
-    const totalStorage = batteryCount * 13.5; // Assuming each battery is 13.5 kWh
-    document.getElementById("totalBatterySizeDisplay").textContent = `Total Battery Storage: ${totalStorage.toFixed(2)} kWh`;
+    const totalBatterySizeDisplay = document.getElementById("totalBatterySizeDisplay");
+
+    if (totalBatterySizeDisplay) {
+        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${batteryCount * 16} kWh`;
+    } else {
+        console.error("❌ Total Battery Size Display not found!");
+    }
 }
 
 // Function to apply battery count from modal
 function applyBatteries() {
     const batteryQuantity = parseInt(document.getElementById("batteryQuantity").value) || 0;
-    document.getElementById("batteryCount").value = batteryQuantity;
-    updateTotalBatterySize();
+    const batteryCountInput = document.getElementById("batteryCount");
+    const totalBatterySizeDisplay = document.getElementById("totalBatterySizeDisplay");
+
+    if (batteryCountInput && totalBatterySizeDisplay) {
+        batteryCountInput.value = batteryQuantity;
+        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${batteryQuantity * 16} kWh`;
+        window.cachedBatteryCount = batteryQuantity;
+    } else {
+        console.error("❌ Battery Count input or Total Battery Size Display not found!");
+    }
+
     closeModal("batteryCountModal");
+    updateCalculateButtonState();
+    updateBuildSystemButtonState();
 }
 
 // Function to update battery storage display in modal
 function updateBatteryStorageDisplay() {
     const batteryQuantity = parseInt(document.getElementById("batteryQuantity").value) || 0;
-    const totalStorage = batteryQuantity * 13.5; // Assuming each battery is 13.5 kWh
-    document.getElementById("totalStorage").textContent = totalStorage.toFixed(2);
+    const totalStorage = document.getElementById("totalStorage");
+
+    if (totalStorage) {
+        totalStorage.textContent = (batteryQuantity * 16).toFixed(2);
+    } else {
+        console.error("❌ Total Storage element not found!");
+    }
 }
 
-// ✅ Initialize Autocomplete and Add Event Listeners on Page Load
+// Function to reset the form and results
+function resetForm() {
+    const solarForm = document.getElementById("solarForm");
+    const manualForm = document.getElementById("manualForm");
+    const systemSizeDisplay = document.getElementById("systemSizeDisplay");
+    const totalBatterySizeDisplay = document.getElementById("totalBatterySizeDisplay");
+    const resultsDiv = document.getElementById("results");
+    const downloadLinkDiv = document.getElementById("downloadLink");
+    const addBatteriesButton = document.getElementById("addBatteriesButton");
+
+    if (solarForm) solarForm.reset();
+    if (manualForm) manualForm.reset();
+    if (systemSizeDisplay) systemSizeDisplay.innerHTML = "";
+    if (totalBatterySizeDisplay) totalBatterySizeDisplay.innerHTML = "";
+    if (resultsDiv) resultsDiv.innerHTML = "";
+    if (downloadLinkDiv) {
+        downloadLinkDiv.innerHTML = "";
+        downloadLinkDiv.style.display = "none";
+    }
+    if (addBatteriesButton) {
+        addBatteriesButton.disabled = true;
+        addBatteriesButton.style.backgroundColor = "#a3bffa";
+    }
+
+    // Reset selected place
+    selectedPlace = null;
+
+    // Reset button states
+    updateCalculateButtonState();
+    updateManualCalculateButtonState();
+    updateBuildSystemButtonState();
+
+    // Reset dropdown and layout
+    const dropdownContent = document.querySelector(".dropdown-content");
+    const dropdownToggle = document.querySelector(".dropdown-toggle");
+    const resultsColumn = document.querySelector(".results-column");
+
+    if (dropdownToggle) dropdownToggle.setAttribute("aria-expanded", "true");
+    if (dropdownContent) dropdownContent.classList.remove("hidden");
+    if (resultsColumn) {
+        resultsColumn.style.margin = "";
+        resultsColumn.style.width = "";
+    }
+}
+
+// Initialize Google Maps Autocomplete when the API is loaded
+window.initAutocomplete = function() {
+    if (!googleMapsLoaded) {
+        googleMapsLoaded = true;
+        initializeAutocomplete();
+    }
+};
+
 document.addEventListener("DOMContentLoaded", function () {
+    console.log("🚀 Initializing UI Components...");
+
     // Ensure all elements are available before setting up
     const requiredFields = [
         "currentConsumption", "desiredProduction", "fullAddress", "currentMonthlyAverageBill",
         "systemCost", "monthlyCost", "manualCurrentConsumption", "manualDesiredProduction",
-        "manualFullAddress", "manualCurrentMonthlyAverageBill", "manualSystemCost", "manualMonthlyCost"
+        "manualFullAddress", "manualCurrentMonthlyAverageBill", "manualSystemCost", "manualMonthlyCost",
+        "batteryCount"
     ];
 
     requiredFields.forEach(fieldId => {
@@ -1174,137 +1253,71 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Setup functions for modals and tabs
+    // ✅ Setup all necessary UI functions
     setupDropdown();
     setupConsumptionHelp();
     setupUtilityRateHelp();
     setupMonthlyBillHelp();
-    setupBatteryHelp();
+    setupBatteryHelp(); // 🔋 Handles Add Batteries
     setupCurrentMonthlyBillHelp();
     setupSystemCostHelp();
     setupTabs();
 
-    // Add event listeners for buttons
-    const calculateButton = document.getElementById("calculateButton");
-    if (calculateButton) {
-        calculateButton.addEventListener("click", (event) => {
-            console.log("Calculate button clicked, preventing default...");
-            event.preventDefault();
-            event.stopPropagation();
-            generatePresentation(event);
-            return false;
-        });
-    } else {
-        console.error("❌ Calculate button not found!");
-    }
-    
-    const manualCalculateButton = document.getElementById("manualCalculateButton");
-    if (manualCalculateButton) {
-        manualCalculateButton.addEventListener("click", (event) => {
-            console.log("Manual Calculate button clicked, preventing default...");
-            event.preventDefault();
-            event.stopPropagation();
-            generatePresentation(event);
-            return false;
-        });
-    } else {
-        console.error("❌ Manual Calculate button not found!");
-    }
-
+    // ✅ Attach event listeners to main buttons
     const buildSystemButton = document.getElementById("buildSystemButton");
     if (buildSystemButton) {
-        buildSystemButton.addEventListener("click", (event) => {
-            console.log("Build System button clicked, preventing default...");
-            event.preventDefault();
-            buildSystem();
-        });
+        buildSystemButton.addEventListener("click", buildSystem);
+        console.log("✅ Build System button event listener attached");
     } else {
         console.error("❌ Build System button not found!");
     }
 
-    // Form submission prevention and Enter key handling
-    const solarForm = document.getElementById("solarForm");
-    const manualForm = document.getElementById("manualForm");
-
-    if (solarForm) {
-        solarForm.addEventListener("submit", (event) => {
-            console.log("Solar Form submission prevented.");
-            event.preventDefault();
+    const addBatteriesButton = document.getElementById("addBatteriesButton");
+    if (addBatteriesButton) {
+        addBatteriesButton.addEventListener("click", () => {
+            console.log("🔋 Add Batteries button clicked!");
+            addBatteries();
         });
-
-        solarForm.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" && !calculateButton.disabled) {
-                console.log("Enter key pressed in Solar Form, triggering calculateButton click...");
-                event.preventDefault();
-                calculateButton.click();
-            }
-        });
+        console.log("✅ Add Batteries button event listener attached");
     } else {
-        console.error("❌ Solar Form not found!");
+        console.error("❌ Add Batteries button not found!");
     }
 
-    if (manualForm) {
-        manualForm.addEventListener("submit", (event) => {
-            console.log("Manual Form submission prevented.");
-            event.preventDefault();
-        });
-
-        manualForm.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" && !manualCalculateButton.disabled) {
-                console.log("Enter key pressed in Manual Form, triggering manualCalculateButton click...");
-                event.preventDefault();
-                manualCalculateButton.click();
-            }
-        });
+    const calculateButton = document.getElementById("calculateButton");
+    if (calculateButton) {
+        calculateButton.addEventListener("click", generatePresentation);
+        console.log("✅ Calculate button event listener attached");
     } else {
-        console.error("❌ Manual Form not found!");
+        console.error("❌ Calculate button not found!");
     }
 
-    // Add change/input event listeners to update button states dynamically
-    const inputsToWatch = [
-        "currentConsumption", "desiredProduction", "fullAddress", "currentMonthlyAverageBill",
-        "systemCost", "monthlyCost", "manualCurrentConsumption", "manualDesiredProduction",
-        "manualFullAddress", "manualCurrentMonthlyAverageBill", "manualSystemCost", "manualMonthlyCost"
-    ];
+    const manualCalculateButton = document.getElementById("manualCalculateButton");
+    if (manualCalculateButton) {
+        manualCalculateButton.addEventListener("click", generatePresentation);
+        console.log("✅ Manual Calculate button event listener attached");
+    } else {
+        console.error("❌ Manual Calculate button not found!");
+    }
 
-    inputsToWatch.forEach(fieldId => {
+    // ✅ Monitor required fields for changes and update buttons
+    requiredFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
             field.addEventListener("input", () => {
-                console.log(`Input event on ${fieldId}: ${field.value}`);
-                updateCalculateButtonState();
-                updateManualCalculateButtonState();
                 updateBuildSystemButtonState();
+                updateCalculateButtonState();
             });
             field.addEventListener("change", () => {
-                console.log(`Change event on ${fieldId}: ${field.value}`);
-                updateCalculateButtonState();
-                updateManualCalculateButtonState();
                 updateBuildSystemButtonState();
+                updateCalculateButtonState();
             });
         }
     });
 
-    // Battery count listener
-    const batteryQuantity = document.getElementById("batteryQuantity");
-    if (batteryQuantity) {
-        batteryQuantity.addEventListener("change", updateBatteryStorageDisplay);
-    }
-
-    // Initial button state update
-    updateCalculateButtonState();
-    updateManualCalculateButtonState();
+    // ✅ Initialize button states after DOM is fully loaded
     updateBuildSystemButtonState();
-});
+    updateCalculateButtonState();
+    window.lastBuildSystemButtonState = buildSystemButton ? buildSystemButton.disabled : false; // Initialize state tracker
 
-// Prevent Enter key from submitting forms
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        const activeElement = document.activeElement;
-        if (activeElement.tagName === 'INPUT') {
-            console.log('Enter key in input prevented from submitting form');
-            e.preventDefault();
-            return false;
-        }
-    }
-}, true);
+    console.log("✅ UI Initialization Complete.");
+});
