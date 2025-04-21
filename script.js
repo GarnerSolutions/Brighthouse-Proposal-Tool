@@ -602,23 +602,24 @@ async function generatePresentation(event) {
             let batteryCostPerKWh = 1000; // $1000 per kWh
 
             // If in Wizard mode and System Cost Calculator was used, derive values
-            if (!isManualMode && systemCostElement && systemCostElement.value) {
-                const totalCost = systemCost;
-                const batteryCost = totalBatterySize * batteryCostPerKWh;
-                const solarCost = totalCost - batteryCost - adderCosts - salesCommission;
-                if (solarSize > 0) {
-                    salesRedline = solarCost / (solarSize * 1000); // Reverse calculate sales redline (solarCost = solarSize * 1000 * salesRedline)
-                }
-            } else if (isManualMode) {
-                // In Manual mode, use the total system cost directly and estimate breakdown
-                const totalCost = systemCost;
-                const batteryCost = totalBatterySize * batteryCostPerKWh;
-                adderCosts = 0; // Default to 0 unless specified (could be enhanced with a manual adder input)
-                const solarCost = totalCost - batteryCost - salesCommission;
-                if (solarSize > 0) {
-                    salesRedline = solarCost / (solarSize * 1000); // Estimate sales redline
-                }
+            const systemCost = !isManualMode
+            ? parseFloat(document.getElementById("systemCost")?.value || "0")
+            : parseFloat(document.getElementById("manualSystemCost")?.value || "0");
+        
+        if (!isManualMode && systemCostElement && systemCostElement.value) {
+            const batteryCost = totalBatterySize * batteryCostPerKWh;
+            const solarCost = systemCost - batteryCost - adderCosts - salesCommission;
+            if (solarSize > 0) {
+                salesRedline = solarCost / (solarSize * 1000);
             }
+        } else if (isManualMode) {
+            const batteryCost = totalBatterySize * batteryCostPerKWh;
+            adderCosts = 0; // Manual mode assumption
+            const solarCost = systemCost - batteryCost - salesCommission;
+            if (solarSize > 0) {
+                salesRedline = solarCost / (solarSize * 1000);
+            }
+        }        
 
             // Calculate costs using the updated formula: solarCost = solarSize * 1000 * salesRedline
             const solarCost = solarSize * 1000 * salesRedline;
