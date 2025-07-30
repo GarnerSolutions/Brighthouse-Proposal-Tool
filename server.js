@@ -300,7 +300,7 @@ app.post("/api/calculateSolarSize", async (req, res) => {
         const energyOffset = `${Math.min(100, Math.round((estimatedAnnualProduction / annualConsumption) * 100))}%`;
 
         // Calculate battery size
-        const batterySize = batteryCount > 0 ? `${batteryCount} x 16 kWh` : "None";
+        const batterySize = batteryCount > 0 ? `${batteryCount} x 10 kWh` : "None";
 
         // Prepare response parameters
         const params = {

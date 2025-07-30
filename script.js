@@ -594,7 +594,7 @@ async function generatePresentation(event) {
             const solarSize = responseData.params?.solarSize || "Unknown";
             resultsDiv.innerHTML = `<p>Calculated Solar Size: ${solarSize} kW</p>`;
             
-            const totalBatterySize = batteryCount * 16; // Assuming 16 kWh per battery
+            const totalBatterySize = batteryCount * 10; // Assuming 10 kWh per battery
 
             // Dynamically calculate cost breakdown
             let salesRedline = Number(document.getElementById("salesRedline")?.value) || 0;
@@ -638,7 +638,7 @@ async function generatePresentation(event) {
                         <h3 class="section-title">System Overview</h3>
                         <ul>
                             <li>Solar System Size: <strong>${solarSize} kW</strong></li>
-                            <li>Battery Size: <strong>${totalBatterySize} kWh (${batteryCount} x 16 kWh)</strong></li>
+                            <li>Battery Size: <strong>${totalBatterySize} kWh (${batteryCount} x 10 kWh)</strong></li>
                             <li>Number of Panels: <strong>${responseData.params?.panelCount || "Unknown"}</strong></li>
                         </ul>
                     </div>
@@ -743,8 +743,8 @@ function setupBatteryHelp() {
 
         // Calculate recommended battery size
         const targetBatteryStorage = solarSize * 2; // 2:1 ratio
-        const X = Math.ceil(targetBatteryStorage / 16); // Number of batteries (16 kWh each)
-        const Y = X * 16; // Total kWh
+        const X = Math.ceil(targetBatteryStorage / 10); // Number of batteries (10 kWh each)
+        const Y = X * 10; // Total kWh
 
         // Update modal with recommendations
         recommendedBatteryCount.textContent = X;
@@ -769,11 +769,11 @@ function setupBatteryHelp() {
         if (batteryCountInput) {
             batteryCountInput.value = X;
             if (totalBatterySizeDisplay) {
-                totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${X * 16} kWh`;
+                totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${X * 10} kWh`;
             }
             const batterySizeInput = document.getElementById("batterySizeInput");
             if (batterySizeInput) {
-                batterySizeInput.value = X * 16;
+                batterySizeInput.value = X * 10;
             }
             window.cachedBatteryCount = X;
         }
@@ -792,7 +792,7 @@ function setupBatteryHelp() {
 
     function updateTotalStorage() {
         const quantity = parseInt(batteryQuantity.value) || 0;
-        totalStorage.textContent = quantity * 16;
+        totalStorage.textContent = quantity * 10;
     }
 
     applyBatteriesButton.addEventListener("click", () => {
@@ -800,11 +800,11 @@ function setupBatteryHelp() {
         if (batteryCountInput) {
             batteryCountInput.value = quantity;
             if (totalBatterySizeDisplay) {
-                totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${quantity * 16} kWh`;
+                totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${quantity * 10} kWh`;
             }
             const batterySizeInput = document.getElementById("batterySizeInput");
             if (batterySizeInput) {
-                batterySizeInput.value = quantity * 16;
+                batterySizeInput.value = quantity * 10;
             }
             window.cachedBatteryCount = quantity;
         }
@@ -1107,10 +1107,10 @@ function recommendBatteryCount() {
 
     const systemSize = parseFloat(solarSizeMatch[1]) || 0;
     const recommendedStorage = systemSize * 2; // 2 kWh of battery storage per 1 kW of system size
-    const batteryCount = Math.ceil(recommendedStorage / 16); // Assuming each battery is 16 kWh
+    const batteryCount = Math.ceil(recommendedStorage / 10); // Assuming each battery is 10 kWh
 
     document.getElementById("recommendedBatteryCount").textContent = batteryCount;
-    document.getElementById("recommendedBatteryStorage").textContent = (batteryCount * 16).toFixed(2);
+    document.getElementById("recommendedBatteryStorage").textContent = (batteryCount * 10).toFixed(2);
     showModal("batteryHelpModal");
 }
 
@@ -1122,7 +1122,7 @@ function applyRecommendation() {
 
     if (batteryCountInput && totalBatterySizeDisplay) {
         batteryCountInput.value = recommendedCount;
-        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${recommendedCount * 16} kWh`;
+        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${recommendedCount * 10} kWh`;
         window.cachedBatteryCount = recommendedCount;
     } else {
         console.error("❌ Battery Count input or Total Battery Size Display not found!");
@@ -1146,7 +1146,7 @@ function updateTotalBatterySize() {
     const totalBatterySizeDisplay = document.getElementById("totalBatterySizeDisplay");
 
     if (totalBatterySizeDisplay) {
-        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${batteryCount * 16} kWh`;
+        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${batteryCount * 10} kWh`;
     } else {
         console.error("❌ Total Battery Size Display not found!");
     }
@@ -1160,7 +1160,7 @@ function applyBatteries() {
 
     if (batteryCountInput && totalBatterySizeDisplay) {
         batteryCountInput.value = batteryQuantity;
-        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${batteryQuantity * 16} kWh`;
+        totalBatterySizeDisplay.innerHTML = `Total Battery Size: ${batteryQuantity * 10} kWh`;
         window.cachedBatteryCount = batteryQuantity;
     } else {
         console.error("❌ Battery Count input or Total Battery Size Display not found!");
@@ -1177,7 +1177,7 @@ function updateBatteryStorageDisplay() {
     const totalStorage = document.getElementById("totalStorage");
 
     if (totalStorage) {
-        totalStorage.textContent = (batteryQuantity * 16).toFixed(2);
+        totalStorage.textContent = (batteryQuantity * 10).toFixed(2);
     } else {
         console.error("❌ Total Storage element not found!");
     }

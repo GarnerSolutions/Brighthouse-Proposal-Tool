@@ -1576,7 +1576,7 @@
       },
       {
         "elementId": "p4_i7",
-        "textContent": "16 kWh (1x 16 kWh)\n",
+        "textContent": "10 kWh (1x 10 kWh)\n",
         "styles": [
           null,
           {
@@ -2183,7 +2183,7 @@
       },
       {
         "elementId": "p5_i8",
-        "textContent": "15 Jinko Solar panels\n",
+        "textContent": "15 Solar panels\n",
         "styles": [
           null,
           {

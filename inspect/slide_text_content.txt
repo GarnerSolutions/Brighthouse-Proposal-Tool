@@ -99,7 +99,7 @@ kW solar system
 
 
 Slide 4, Element ID: p4_i7
-16 kWh (1x 16 kWh)
+10 kWh (1x 10 kWh)
 
 
 Slide 4, Element ID: p4_i8
@@ -139,7 +139,7 @@ Slide 5, Element ID: p5_i7
 
 
 Slide 5, Element ID: p5_i8
-15 Jinko Solar panels
+15 Solar panels
 
 
 Slide 5, Element ID: p5_i10
